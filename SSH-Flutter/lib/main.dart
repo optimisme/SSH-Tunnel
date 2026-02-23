@@ -49,8 +49,16 @@ class _SSHHomePageState extends State<SSHHomePage> {
       animation: widget.store,
       builder: (context, _) {
         final selected = widget.store.selectedConfiguration;
+        final scaffoldColor = CupertinoColors.systemGroupedBackground
+            .resolveFrom(context);
+        final sidebarColor = CupertinoColors.secondarySystemGroupedBackground
+            .resolveFrom(context);
+        final dividerColor = CupertinoColors.separator.resolveFrom(context);
+        final secondaryLabelColor = CupertinoColors.secondaryLabel.resolveFrom(
+          context,
+        );
         return CupertinoPageScaffold(
-          backgroundColor: const Color(0xFFF6F8FB),
+          backgroundColor: scaffoldColor,
           child: SafeArea(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +66,7 @@ class _SSHHomePageState extends State<SSHHomePage> {
                 Container(
                   width: _sidebarWidth,
                   padding: const EdgeInsets.all(12),
-                  color: const Color(0xFFF1F4F9),
+                  color: sidebarColor,
                   child: Column(
                     children: [
                       const Row(
@@ -96,7 +104,10 @@ class _SSHHomePageState extends State<SSHHomePage> {
                                       width: 9,
                                       height: 9,
                                       decoration: BoxDecoration(
-                                        color: cfg.connection.statusColor,
+                                        color: CupertinoDynamicColor.resolve(
+                                          cfg.connection.statusColor,
+                                          context,
+                                        ),
                                         shape: BoxShape.circle,
                                       ),
                                     ),
@@ -159,15 +170,15 @@ class _SSHHomePageState extends State<SSHHomePage> {
                       _sidebarDragStartWidth = null;
                       _sidebarDragStartX = null;
                     },
-                    child: Container(width: 1, color: const Color(0xFFD8E0E8)),
+                    child: Container(width: 1, color: dividerColor),
                   ),
                 ),
                 Expanded(
                   child: selected == null
-                      ? const Center(
+                      ? Center(
                           child: Text(
                             'Selecciona o crea una configuració',
-                            style: TextStyle(color: Color(0x8A000000)),
+                            style: TextStyle(color: secondaryLabelColor),
                           ),
                         )
                       : ConnectionDetailView(
@@ -204,11 +215,19 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
 
   @override
   Widget build(BuildContext context) {
+    final logPanelBorderColor = CupertinoColors.separator.resolveFrom(context);
+    final logPanelBackgroundColor = CupertinoColors
+        .tertiarySystemGroupedBackground
+        .resolveFrom(context);
     return AnimatedBuilder(
       animation: _connection,
       builder: (context, _) {
         final isRunning = _connection.isRunning;
         final forwardRules = _connection.forwardRules;
+        final statusColor = CupertinoDynamicColor.resolve(
+          _connection.statusColor,
+          context,
+        );
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -375,8 +394,8 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFCCD7DB)),
-                        color: const Color(0xFFF8FBFC),
+                        border: Border.all(color: logPanelBorderColor),
+                        color: logPanelBackgroundColor,
                       ),
                       child: SingleChildScrollView(
                         child: SelectableText(
@@ -437,7 +456,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                         width: 10,
                         height: 10,
                         decoration: BoxDecoration(
-                          color: _connection.statusColor,
+                          color: statusColor,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -445,7 +464,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                       Text(
                         _connection.statusLabel,
                         style: TextStyle(
-                          color: _connection.statusColor,
+                          color: statusColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -498,13 +517,16 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cardColor = CupertinoColors.secondarySystemGroupedBackground
+        .resolveFrom(context);
+    final cardBorderColor = CupertinoColors.separator.resolveFrom(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFDFDFE),
+        color: cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD9E0E8)),
+        border: Border.all(color: cardBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1310,17 +1332,17 @@ class SSHConnectionController extends ChangeNotifier {
 
   Color get statusColor {
     if (status.startsWith('Actiu')) {
-      return const Color(0xFF34C759);
+      return CupertinoColors.systemGreen;
     }
     if (status.startsWith('Connectant') ||
         status.startsWith('Reintentant') ||
         status.startsWith('Afegint host')) {
-      return const Color(0xFFFF9F0A);
+      return CupertinoColors.systemOrange;
     }
     if (status.startsWith('Aturat')) {
-      return const Color(0xFFFF3B30);
+      return CupertinoColors.systemRed;
     }
-    return const Color(0xFF8E8E93);
+    return CupertinoColors.secondaryLabel;
   }
 
   bool get _supportsControlMaster => !Platform.isWindows;
