@@ -1727,9 +1727,25 @@ class SSHConnectionController extends ChangeNotifier {
   bool _matchesOurTunnelCommandLine(String cmd) {
     if (Platform.isWindows) {
       final lower = cmd.toLowerCase();
-      return lower.contains('ssh.exe') ||
-          lower.contains('\\ssh') ||
-          lower.contains(',"ssh.exe"');
+      if (!lower.contains('ssh.exe') && !lower.contains('\\ssh')) {
+        return false;
+      }
+      // Verify the command line matches our specific tunnel configuration so
+      // that unrelated ssh.exe processes (e.g. Git, VS Code remote) are not
+      // mistaken for our tunnel.
+      final target = '$user@$host';
+      final portOpt = '-p $sshPort';
+      if (!cmd.contains(target) || !cmd.contains(portOpt)) {
+        return false;
+      }
+      for (final rule in forwardRules) {
+        final forward =
+            '-L ${rule.localPort}:${rule.remoteHost}:${rule.remotePort}';
+        if (!cmd.contains(forward)) {
+          return false;
+        }
+      }
+      return true;
     }
 
     final target = '$user@$host';
@@ -2156,10 +2172,51 @@ class SSHConnectionController extends ChangeNotifier {
     }
 
     if (Platform.isWindows) {
+      // 1. Check known fixed paths (locale-independent, e.g. System32\OpenSSH).
       for (final path in windowsPaths) {
         if (File(path).existsSync()) {
           return path;
         }
+      }
+
+      // 2. Check under %ProgramFiles% and %ProgramFiles(x86)%, which are
+      //    locale-aware env vars (e.g. "Archivos de programa" on Spanish
+      //    Windows) — more reliable than hardcoding "C:\Program Files".
+      final programFilesDirs = [
+        Platform.environment['ProgramFiles'],
+        Platform.environment['ProgramFiles(x86)'],
+      ].whereType<String>().where((d) => d.isNotEmpty);
+
+      for (final dir in programFilesDirs) {
+        for (final sub in [r'OpenSSH', r'OpenSSH-Win64']) {
+          final candidate = '$dir\\$sub\\$command.exe';
+          if (File(candidate).existsSync()) {
+            return candidate;
+          }
+        }
+      }
+
+      // 3. Fall back to resolving via where.exe so that PATH-installed OpenSSH
+      //    (e.g. Git for Windows, winget installs) is found even when not at a
+      //    known fixed path.
+      try {
+        final result = Process.runSync(
+          r'C:\Windows\System32\where.exe',
+          [command],
+        );
+        if (result.exitCode == 0) {
+          final first =
+              result.stdout
+                  .toString()
+                  .split('\n')
+                  .map((l) => l.trim())
+                  .firstWhere((l) => l.isNotEmpty, orElse: () => '');
+          if (first.isNotEmpty) {
+            return first;
+          }
+        }
+      } catch (_) {
+        // where.exe not available or failed — fall through to bare name.
       }
     }
 
