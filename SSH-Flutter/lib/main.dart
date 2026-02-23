@@ -237,6 +237,10 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                 value: widget.configuration.name,
                 enabled: true,
                 label: 'Nom de la configuració',
+                labelStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
                 onChanged: widget.configuration.setName,
               ),
               const SizedBox(height: 14),
@@ -550,6 +554,7 @@ class BoundTextField extends StatefulWidget {
     required this.enabled,
     required this.onChanged,
     this.label,
+    this.labelStyle,
     this.keyboardType,
   });
 
@@ -557,6 +562,7 @@ class BoundTextField extends StatefulWidget {
   final bool enabled;
   final ValueChanged<String> onChanged;
   final String? label;
+  final TextStyle? labelStyle;
   final TextInputType? keyboardType;
 
   @override
@@ -610,7 +616,9 @@ class _BoundTextFieldState extends State<BoundTextField> {
       children: [
         Text(
           widget.label!,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+          style:
+              widget.labelStyle ??
+              const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 4),
         field,
