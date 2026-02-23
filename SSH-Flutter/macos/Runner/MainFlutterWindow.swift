@@ -1,20 +1,16 @@
 import Cocoa
 import FlutterMacOS
+import window_manager
 
 class MainFlutterWindow: NSWindow {
   override func awakeFromNib() {
-    super.awakeFromNib()
-
     let flutterViewController = FlutterViewController()
-    let windowFrame = NSRect(
-      origin: self.frame.origin,
-      size: NSSize(width: 1020, height: 880)
-    )
+    let windowFrame = self.frame
     self.contentViewController = flutterViewController
     self.setFrame(windowFrame, display: true)
-    self.title = "SSH Túnel"
-    self.center()
 
     RegisterGeneratedPlugins(registry: flutterViewController)
+
+    super.awakeFromNib()
   }
 }

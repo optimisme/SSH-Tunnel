@@ -6,9 +6,25 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter_cupertino_desktop_kit/flutter_cupertino_desktop_kit.dart';
+import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await windowManager.ensureInitialized();
+  windowManager.waitUntilReadyToShow(
+    const WindowOptions(
+      size: Size(850, 775),
+      minimumSize: Size(800, 600),
+      title: 'SSH Túnel',
+      center: true,
+    ),
+    () async {
+      await windowManager.show();
+      await windowManager.focus();
+    },
+  );
+
   final store = SSHConfigStore();
   await store.initialize();
   runApp(SSHFlutterApp(store: store));
