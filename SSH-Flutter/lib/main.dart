@@ -238,7 +238,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                 enabled: true,
                 label: 'Nom de la configuració',
                 labelStyle: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
                 onChanged: widget.configuration.setName,
@@ -537,7 +537,7 @@ class SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
           child,
