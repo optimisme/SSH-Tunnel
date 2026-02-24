@@ -45,6 +45,32 @@ class SSHFlutterApp extends StatelessWidget {
   }
 }
 
+class AppTextStyles {
+  static const TextStyle sidebarTitle = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+  );
+  static const TextStyle sectionTitle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+  );
+  static const TextStyle bodySmall = TextStyle(fontSize: 12);
+  static const TextStyle label = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+  );
+  static const TextStyle status = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+  );
+  static const TextStyle terminal = TextStyle(
+    fontFamily: 'SF Mono',
+    fontFamilyFallback: ['Menlo', 'Consolas', 'Courier New'],
+    fontSize: 12,
+    height: 1.3,
+  );
+}
+
 class SSHHomePage extends StatefulWidget {
   const SSHHomePage({super.key, required this.store});
 
@@ -85,17 +111,14 @@ class _SSHHomePageState extends State<SSHHomePage> {
                   color: sidebarColor,
                   child: Column(
                     children: [
-                      const Row(
+                      Row(
                         children: [
                           Expanded(
                             child: Text(
                               'Configuracions SSH',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AppTextStyles.sidebarTitle,
                             ),
                           ),
                         ],
@@ -108,6 +131,12 @@ class _SSHHomePageState extends State<SSHHomePage> {
                             final cfg = widget.store.configurations[index];
                             final isSelected =
                                 cfg.id == widget.store.selectedId;
+                            final sidebarTextColor = CDKThemeNotifier.of(
+                              context,
+                            )!.changeNotifier.getSidebarColorText(
+                              isSelected,
+                              true,
+                            );
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 6),
                               child: CDKButtonSidebar(
@@ -132,7 +161,9 @@ class _SSHHomePageState extends State<SSHHomePage> {
                                       child: Text(
                                         cfg.name,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 12),
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: sidebarTextColor,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -194,7 +225,9 @@ class _SSHHomePageState extends State<SSHHomePage> {
                       ? Center(
                           child: Text(
                             'Selecciona o crea una configuració',
-                            style: TextStyle(color: secondaryLabelColor),
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: secondaryLabelColor,
+                            ),
                           ),
                         )
                       : ConnectionDetailView(
@@ -253,10 +286,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                 value: widget.configuration.name,
                 enabled: true,
                 label: 'Nom de la configuració',
-                labelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                labelStyle: AppTextStyles.sectionTitle,
                 onChanged: widget.configuration.setName,
               ),
               const SizedBox(height: 14),
@@ -306,11 +336,11 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Row(
                           children: [
-                            const SizedBox(
+                            SizedBox(
                               width: 44,
                               child: Text(
                                 'Nom',
-                                style: TextStyle(fontSize: 12),
+                                style: AppTextStyles.bodySmall,
                               ),
                             ),
                             SizedBox(
@@ -323,11 +353,11 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const SizedBox(
+                            SizedBox(
                               width: 48,
                               child: Text(
                                 'Local',
-                                style: TextStyle(fontSize: 12),
+                                style: AppTextStyles.bodySmall,
                               ),
                             ),
                             SizedBox(
@@ -341,7 +371,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Text('→', style: TextStyle(fontSize: 12)),
+                            const Text('→', style: AppTextStyles.bodySmall),
                             const SizedBox(width: 6),
                             Expanded(
                               child: BoundTextField(
@@ -390,10 +420,10 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Reconnectar automàticament si es perd la connexió',
-                      style: TextStyle(fontSize: 12),
+                      style: AppTextStyles.bodySmall,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -422,11 +452,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                           _connection.logText.isEmpty
                               ? '—'
                               : _connection.logText,
-                          style: const TextStyle(
-                            fontFamily: 'Menlo',
-                            fontSize: 12,
-                            height: 1.3,
-                          ),
+                          style: AppTextStyles.terminal,
                         ),
                       ),
                     ),
@@ -483,9 +509,8 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                       const SizedBox(width: 6),
                       Text(
                         _connection.statusLabel,
-                        style: TextStyle(
+                        style: AppTextStyles.status.copyWith(
                           color: statusColor,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -518,7 +543,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
       children: [
         SizedBox(
           width: 72,
-          child: Text(label, style: const TextStyle(fontSize: 12)),
+          child: Text(label, style: AppTextStyles.bodySmall),
         ),
         if (width == null)
           Expanded(child: field)
@@ -553,7 +578,7 @@ class SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            style: AppTextStyles.sectionTitle,
           ),
           const SizedBox(height: 10),
           child,
@@ -632,9 +657,7 @@ class _BoundTextFieldState extends State<BoundTextField> {
       children: [
         Text(
           widget.label!,
-          style:
-              widget.labelStyle ??
-              const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+          style: widget.labelStyle ?? AppTextStyles.label,
         ),
         const SizedBox(height: 4),
         field,
