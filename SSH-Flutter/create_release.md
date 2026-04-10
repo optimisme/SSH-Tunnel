@@ -7,3 +7,7 @@ cd ../../../../
 
 ## Windows
 
+Compress-Archive `
+    -Path .\build\windows\x64\runner\Release\* `
+    -DestinationPath ..\Releases\ssh_flutter_windows_x64.zip `
+    -Force

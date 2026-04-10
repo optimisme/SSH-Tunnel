@@ -1479,6 +1479,13 @@ class SSHConnectionController extends ChangeNotifier {
       'StrictHostKeyChecking=accept-new',
     ]);
 
+    if (Platform.isWindows) {
+      args.addAll([
+        '-o',
+        'UpdateHostKeys=no',
+      ]);
+    }
+
     if (_supportsControlMaster) {
       args.addAll([
         '-o',
@@ -1512,6 +1519,7 @@ class SSHConnectionController extends ChangeNotifier {
 
     p.stdout.transform(utf8.decoder).listen(_appendLog);
     p.stderr.transform(utf8.decoder).listen(_appendLog);
+    unawaited(_confirmStarted(p));
 
     unawaited(
       p.exitCode.then((code) async {
@@ -1599,6 +1607,35 @@ class SSHConnectionController extends ChangeNotifier {
         }
       }),
     );
+  }
+
+  Future<void> _confirmStarted(Process p) async {
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
+
+    if (_process != p || _stopRequested) {
+      return;
+    }
+
+    final detectedState = await _detectCurrentState();
+    if (_process != p || _stopRequested) {
+      return;
+    }
+
+    switch (detectedState.type) {
+      case DetectedStateType.activeOursControlMaster:
+        _externalMatchingPid = null;
+        break;
+      case DetectedStateType.activeMatchesConfigByPid:
+        _externalMatchingPid = detectedState.pid;
+        break;
+      case DetectedStateType.portUsedByOther:
+      case DetectedStateType.stopped:
+        break;
+    }
+
+    isRunning = true;
+    status = 'Actiu (localhost:${_localPortsSummary()})';
+    notifyListeners();
   }
 
   Future<DetectedState> _detectCurrentState() async {
