@@ -5,6 +5,14 @@ import Foundation
 import Combine
 import AppKit
 
+private func decodedUUID<K: CodingKey>(from container: KeyedDecodingContainer<K>, forKey key: K) throws -> UUID {
+    if let raw = try container.decodeIfPresent(String.self, forKey: key),
+       let uuid = UUID(uuidString: raw) {
+        return uuid
+    }
+    return UUID()
+}
+
 struct PortForwardRule: Identifiable, Hashable, Codable {
     let id: UUID
     var name: String
@@ -26,7 +34,7 @@ struct PortForwardRule: Identifiable, Hashable, Codable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = try container.decode(UUID.self, forKey: .id)
+        self.id = try decodedUUID(from: container, forKey: .id)
         self.name = try container.decodeIfPresent(String.self, forKey: .name) ?? ""
         self.localPort = try container.decode(String.self, forKey: .localPort)
         self.remoteHost = try container.decode(String.self, forKey: .remoteHost)
@@ -890,6 +898,38 @@ final class SSHConfiguration: ObservableObject, Identifiable {
         var id: UUID
         var name: String
         var connection: SSHConnectionController.Snapshot
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, connection
+        }
+
+        init(id: UUID, name: String, connection: SSHConnectionController.Snapshot) {
+            self.id = id
+            self.name = name
+            self.connection = connection
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try decodedUUID(from: container, forKey: .id)
+            self.name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Connexió"
+            self.connection = try container.decodeIfPresent(SSHConnectionController.Snapshot.self, forKey: .connection)
+                ?? SSHConnectionController.Snapshot(
+                    host: "",
+                    user: "",
+                    sshPort: "",
+                    keyPath: "",
+                    forwardRules: [
+                        PortForwardRule(
+                            name: "Regla 1",
+                            localPort: "5901",
+                            remoteHost: "localhost",
+                            remotePort: "5900"
+                        )
+                    ],
+                    autoReconnect: false
+                )
+        }
     }
 
     init(name: String, defaultLocalPort: String) {
@@ -911,12 +951,19 @@ final class SSHConfiguration: ObservableObject, Identifiable {
 
 @MainActor
 final class SSHConfigStore: ObservableObject {
+    private enum LoadResult {
+        case missing
+        case loaded([SSHConfiguration])
+        case unreadable
+    }
+
     @Published var configurations: [SSHConfiguration]
     @Published var selectedID: UUID?
     private var cancellables: Set<AnyCancellable> = []
     private var connectionCancellables: [UUID: AnyCancellable] = [:]
     private var saveWorkItem: DispatchWorkItem?
     private let saveURL: URL
+    private var needsUnreadableBackup = false
 
     init() {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -924,16 +971,21 @@ final class SSHConfigStore: ObservableObject {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         saveURL = dir.appendingPathComponent("configs.json")
 
-        if let loaded = Self.loadConfigs(from: saveURL) {
+        switch Self.loadConfigs(from: saveURL) {
+        case .loaded(let loaded):
             configurations = loaded
-        } else {
+        case .missing:
             configurations = []
+        case .unreadable:
+            configurations = []
+            needsUnreadableBackup = true
         }
         selectedID = configurations.first?.id
 
         attachObservers()
 
         $configurations
+            .dropFirst()
             .sink { [weak self] _ in
                 self?.attachObservers()
                 self?.scheduleSave()
@@ -994,6 +1046,8 @@ final class SSHConfigStore: ObservableObject {
     }
 
     private func save() {
+        guard prepareUnreadableBackupIfNeeded() else { return }
+
         let snapshots = configurations.map { cfg -> SSHConfiguration.Snapshot in
             var snap = cfg.snapshot()
             snap.id = cfg.id
@@ -1009,10 +1063,41 @@ final class SSHConfigStore: ObservableObject {
         }
     }
 
-    private static func loadConfigs(from url: URL) -> [SSHConfiguration]? {
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        guard let snaps = try? JSONDecoder().decode([SSHConfiguration.Snapshot].self, from: data) else { return nil }
-        return snaps.map { SSHConfiguration(snapshot: $0) }
+    private func prepareUnreadableBackupIfNeeded() -> Bool {
+        guard needsUnreadableBackup else { return true }
+        guard FileManager.default.fileExists(atPath: saveURL.path) else {
+            needsUnreadableBackup = false
+            return true
+        }
+
+        let backupURL = Self.makeRecoveryBackupURL(for: saveURL)
+        do {
+            try FileManager.default.copyItem(at: saveURL, to: backupURL)
+            needsUnreadableBackup = false
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private static func loadConfigs(from url: URL) -> LoadResult {
+        guard let data = try? Data(contentsOf: url) else { return .missing }
+        do {
+            let snaps = try JSONDecoder().decode([SSHConfiguration.Snapshot].self, from: data)
+            return .loaded(snaps.map { SSHConfiguration(snapshot: $0) })
+        } catch {
+            return .unreadable
+        }
+    }
+
+    private static func makeRecoveryBackupURL(for url: URL) -> URL {
+        let baseName = url.deletingPathExtension().lastPathComponent
+        let ext = url.pathExtension
+        let suffix = "\(Int(Date().timeIntervalSince1970))-\(UUID().uuidString.lowercased())"
+        let fileName = ext.isEmpty
+            ? "\(baseName).recovery-\(suffix)"
+            : "\(baseName).recovery-\(suffix).\(ext)"
+        return url.deletingLastPathComponent().appendingPathComponent(fileName)
     }
 }
 
