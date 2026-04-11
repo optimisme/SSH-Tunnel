@@ -131,12 +131,9 @@ class _SSHHomePageState extends State<SSHHomePage> {
                             final cfg = widget.store.configurations[index];
                             final isSelected =
                                 cfg.id == widget.store.selectedId;
-                            final sidebarTextColor = CDKThemeNotifier.of(
-                              context,
-                            )!.changeNotifier.getSidebarColorText(
-                              isSelected,
-                              true,
-                            );
+                            final sidebarTextColor =
+                                CDKThemeNotifier.of(context)!.changeNotifier
+                                    .getSidebarColorText(isSelected, true);
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 6),
                               child: CDKButtonSidebar(
@@ -541,10 +538,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
 
     return Row(
       children: [
-        SizedBox(
-          width: 72,
-          child: Text(label, style: AppTextStyles.bodySmall),
-        ),
+        SizedBox(width: 72, child: Text(label, style: AppTextStyles.bodySmall)),
         if (width == null)
           Expanded(child: field)
         else
@@ -576,10 +570,7 @@ class SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: AppTextStyles.sectionTitle,
-          ),
+          Text(title, style: AppTextStyles.sectionTitle),
           const SizedBox(height: 10),
           child,
         ],
@@ -655,10 +646,7 @@ class _BoundTextFieldState extends State<BoundTextField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label!,
-          style: widget.labelStyle ?? AppTextStyles.label,
-        ),
+        Text(widget.label!, style: widget.labelStyle ?? AppTextStyles.label),
         const SizedBox(height: 4),
         field,
       ],
@@ -694,6 +682,7 @@ class SSHConfigStore extends ChangeNotifier {
     final appSupportDir = await _appSupportDirectory();
     await appSupportDir.create(recursive: true);
     _saveFile = File('${appSupportDir.path}/configs.json');
+    var needsIdMigrationSave = false;
 
     if (await _saveFile!.exists()) {
       try {
@@ -701,12 +690,17 @@ class SSHConfigStore extends ChangeNotifier {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
           for (final item in decoded) {
+            Map<String, dynamic>? itemMap;
             if (item is Map<String, dynamic>) {
-              _configurations.add(SSHConfiguration.fromJson(item));
+              itemMap = item;
             } else if (item is Map) {
-              _configurations.add(
-                SSHConfiguration.fromJson(Map<String, dynamic>.from(item)),
-              );
+              itemMap = Map<String, dynamic>.from(item);
+            }
+
+            if (itemMap != null) {
+              needsIdMigrationSave =
+                  needsIdMigrationSave || _configurationNeedsMigration(itemMap);
+              _configurations.add(SSHConfiguration.fromJson(itemMap));
             }
           }
         }
@@ -718,6 +712,10 @@ class SSHConfigStore extends ChangeNotifier {
     selectedId = _configurations.isEmpty ? null : _configurations.first.id;
     _attachObservers();
     notifyListeners();
+
+    if (needsIdMigrationSave && _configurations.isNotEmpty) {
+      await _save();
+    }
   }
 
   void selectConfiguration(String id) {
@@ -725,7 +723,6 @@ class SSHConfigStore extends ChangeNotifier {
       return;
     }
     selectedId = id;
-    _scheduleSave();
     notifyListeners();
   }
 
@@ -906,7 +903,7 @@ class SSHConfiguration extends ChangeNotifier {
         : SSHConnectionController(defaultLocalPort: '5901');
 
     return SSHConfiguration._(
-      id: (json['id'] as String?) ?? _nextId(),
+      id: _coerceUuidString(json['id']),
       name: (json['name'] as String?) ?? 'Connexió',
       connection: connection,
     );
@@ -950,7 +947,7 @@ class PortForwardRule {
 
   factory PortForwardRule.fromJson(Map<String, dynamic> json) {
     return PortForwardRule(
-      id: (json['id'] as String?) ?? _nextId(),
+      id: _coerceUuidString(json['id']),
       name: (json['name'] as String?) ?? '',
       localPort: (json['localPort'] as String?) ?? '',
       remoteHost: (json['remoteHost'] as String?) ?? 'localhost',
@@ -1480,10 +1477,7 @@ class SSHConnectionController extends ChangeNotifier {
     ]);
 
     if (Platform.isWindows) {
-      args.addAll([
-        '-o',
-        'UpdateHostKeys=no',
-      ]);
+      args.addAll(['-o', 'UpdateHostKeys=no']);
     }
 
     if (_supportsControlMaster) {
@@ -2276,17 +2270,15 @@ class SSHConnectionController extends ChangeNotifier {
       //    (e.g. Git for Windows, winget installs) is found even when not at a
       //    known fixed path.
       try {
-        final result = Process.runSync(
-          r'C:\Windows\System32\where.exe',
-          [command],
-        );
+        final result = Process.runSync(r'C:\Windows\System32\where.exe', [
+          command,
+        ]);
         if (result.exitCode == 0) {
-          final first =
-              result.stdout
-                  .toString()
-                  .split('\n')
-                  .map((l) => l.trim())
-                  .firstWhere((l) => l.isNotEmpty, orElse: () => '');
+          final first = result.stdout
+              .toString()
+              .split('\n')
+              .map((l) => l.trim())
+              .firstWhere((l) => l.isNotEmpty, orElse: () => '');
           if (first.isNotEmpty) {
             return first;
           }
@@ -2349,7 +2341,61 @@ enum FailureKind {
 final Random _idRandom = Random();
 
 String _nextId() {
-  final micros = DateTime.now().microsecondsSinceEpoch;
-  final rand = _idRandom.nextInt(1 << 32).toRadixString(16).padLeft(8, '0');
-  return '$micros-$rand';
+  final bytes = List<int>.generate(16, (_) => _idRandom.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  String hexByte(int value) => value.toRadixString(16).padLeft(2, '0');
+  final hex = bytes.map(hexByte).join();
+  return '${hex.substring(0, 8)}-'
+      '${hex.substring(8, 12)}-'
+      '${hex.substring(12, 16)}-'
+      '${hex.substring(16, 20)}-'
+      '${hex.substring(20, 32)}';
+}
+
+final RegExp _uuidPattern = RegExp(
+  r'^[0-9a-fA-F]{8}-'
+  r'[0-9a-fA-F]{4}-'
+  r'[0-9a-fA-F]{4}-'
+  r'[0-9a-fA-F]{4}-'
+  r'[0-9a-fA-F]{12}$',
+);
+
+String _coerceUuidString(dynamic raw) {
+  if (raw is String && _uuidPattern.hasMatch(raw)) {
+    return raw.toLowerCase();
+  }
+  return _nextId();
+}
+
+bool _configurationNeedsMigration(Map<String, dynamic> json) {
+  if (!_isUuidString(json['id'])) {
+    return true;
+  }
+
+  final connection = json['connection'];
+  if (connection is! Map) {
+    return true;
+  }
+
+  final connectionMap = connection is Map<String, dynamic>
+      ? connection
+      : Map<String, dynamic>.from(connection);
+  final rules = connectionMap['forwardRules'];
+  if (rules is! List || rules.isEmpty) {
+    return true;
+  }
+
+  for (final rule in rules) {
+    if (rule is! Map || !_isUuidString(rule['id'])) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool _isUuidString(dynamic raw) {
+  return raw is String && _uuidPattern.hasMatch(raw);
 }
