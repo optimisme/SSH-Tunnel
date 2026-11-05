@@ -25,8 +25,9 @@ xcodebuild \
   -configuration "$CONFIGURATION" \
   -destination "platform=macOS" \
   -derivedDataPath "$DERIVED_DATA" \
-  CODE_SIGNING_ALLOWED=NO \
-  CODE_SIGNING_REQUIRED=NO \
+  CODE_SIGN_STYLE=Manual \
+  CODE_SIGN_IDENTITY="-" \
+  DEVELOPMENT_TEAM="" \
   build
 
 if [[ ! -d "$APP_PATH" ]]; then
