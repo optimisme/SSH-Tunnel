@@ -139,6 +139,64 @@ class SSHConfigStore extends ChangeNotifier {
     _changed();
   }
 
+  /// Finder-style name for a copy: "Name copy", "Name copy 2", …
+  static String copyName(String name, Set<String> existing) {
+    var candidate = l10n.copyName(name);
+    var index = 2;
+    while (existing.contains(candidate)) {
+      candidate = l10n.copyNameNumbered(name, index);
+      index += 1;
+    }
+    return candidate;
+  }
+
+  /// Inserts a copy of the configuration right after it and selects it.
+  /// Rules get new ids, and local ports already used by any configuration
+  /// move to the next free port so both tunnels can run at once.
+  SSHConfiguration? duplicate(String id) {
+    final index = _configurations.indexWhere((c) => c.id == id);
+    if (index < 0) return null;
+    final source = _configurations[index];
+
+    final used = _configurations
+        .expand((c) => c.connection.forwardRules)
+        .map((r) => int.tryParse(r.localPort.trim()))
+        .whereType<int>()
+        .toSet();
+    final connection = source.connection.snapshot();
+    connection['forwardRules'] = [
+      for (final rule in source.connection.forwardRules)
+        () {
+          var localPort = rule.localPort;
+          var port = int.tryParse(rule.localPort.trim());
+          if (port != null) {
+            while (used.contains(port) && port! < 65535) {
+              port += 1;
+            }
+            used.add(port!);
+            localPort = '$port';
+          }
+          return PortForwardRule(
+            id: nextId(),
+            name: rule.name,
+            localPort: localPort,
+            remoteHost: rule.remoteHost,
+            remotePort: rule.remotePort,
+          ).toJson();
+        }(),
+    ];
+
+    final cfg = SSHConfiguration.fromJson({
+      'id': nextId(),
+      'name': copyName(source.name, _configurations.map((c) => c.name).toSet()),
+      'connection': connection,
+    });
+    _configurations.insert(index + 1, cfg);
+    selectedId = cfg.id;
+    _changed();
+    return cfg;
+  }
+
   /// Same semantics as [ReorderableList.onReorder].
   void move(int oldIndex, int newIndex) {
     if (newIndex > oldIndex) newIndex -= 1;

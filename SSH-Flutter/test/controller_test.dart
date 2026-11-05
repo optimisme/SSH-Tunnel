@@ -7,15 +7,13 @@ void main() {
       'Host key verification failed.': FailureKind.hostKeyChanged,
       '@ WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED! @':
           FailureKind.hostKeyChanged,
-      'bind [127.0.0.1]:5901: Address already in use':
-          FailureKind.addressInUse,
+      'bind [127.0.0.1]:5901: Address already in use': FailureKind.addressInUse,
       'channel_setup_fwd_listener_tcpip: cannot listen to port: 5901':
           FailureKind.addressInUse,
       'albert@host: Permission denied (publickey).': FailureKind.authOrKey,
       'Warning: Identity file /Users/a/.ssh/nope not accessible: No such file or directory.':
           FailureKind.authOrKey,
-      'command-line line 0: Bad configuration option: foo':
-          FailureKind.config,
+      'command-line line 0: Bad configuration option: foo': FailureKind.config,
       'Connection timed out during banner exchange': FailureKind.transient,
       'ssh: connect to host 192.168.1.195 port 22: No route to host':
           FailureKind.transient,
@@ -64,7 +62,10 @@ void main() {
 
     test('joined flag values', () {
       expect(
-        matches('ssh -N -L5901:localhost:5900 -p2222 albert@host', port: '2222'),
+        matches(
+          'ssh -N -L5901:localhost:5900 -p2222 albert@host',
+          port: '2222',
+        ),
         isTrue,
       );
     });
@@ -77,8 +78,14 @@ void main() {
     });
 
     test('rejects other targets, forwards and programs', () {
-      expect(matches('/usr/bin/ssh -L 5901:localhost:5900 other@host'), isFalse);
-      expect(matches('/usr/bin/ssh -L 5901:localhost:5999 albert@host'), isFalse);
+      expect(
+        matches('/usr/bin/ssh -L 5901:localhost:5900 other@host'),
+        isFalse,
+      );
+      expect(
+        matches('/usr/bin/ssh -L 5901:localhost:5999 albert@host'),
+        isFalse,
+      );
       expect(
         matches('/usr/bin/autossh -L 5901:localhost:5900 albert@host'),
         isFalse,
@@ -105,16 +112,22 @@ void main() {
       expect(c.forwardRules.single.localPort, '5901');
     });
 
-    test('missing keyPath in a snapshot defaults to id_rsa, empty stays agent', () {
-      expect(
-        SSHConnectionController.fromSnapshot({'host': 'h'}).keyPath,
-        SSHConnectionController.defaultKeyPath,
-      );
-      expect(
-        SSHConnectionController.fromSnapshot({'host': 'h', 'keyPath': ''}).keyPath,
-        '',
-      );
-    });
+    test(
+      'missing keyPath in a snapshot defaults to id_rsa, empty stays agent',
+      () {
+        expect(
+          SSHConnectionController.fromSnapshot({'host': 'h'}).keyPath,
+          SSHConnectionController.defaultKeyPath,
+        );
+        expect(
+          SSHConnectionController.fromSnapshot({
+            'host': 'h',
+            'keyPath': '',
+          }).keyPath,
+          '',
+        );
+      },
+    );
 
     test('control socket hash is stable across versions', () {
       final c = SSHConnectionController.fromSnapshot({
@@ -179,7 +192,9 @@ void main() {
     });
 
     test('snapshot round trip keeps rule order', () {
-      final c = make()..setHost('h')..setUser('u');
+      final c = make()
+        ..setHost('h')
+        ..setUser('u');
       c.addForwardRule();
       c.moveForwardRule(1, 0);
       final copy = SSHConnectionController.fromSnapshot(c.snapshot());

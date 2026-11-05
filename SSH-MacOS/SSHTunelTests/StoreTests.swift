@@ -22,6 +22,47 @@ struct StoreTests {
         #expect(store.configurations.last?.name == SSHConfigStore.defaultName(4))
     }
 
+    @Test func duplicateCopiesSettingsWithFreshIDsAndFreePorts() throws {
+        let store = makeStore()
+        store.addConfiguration()
+        store.addConfiguration()
+        let original = store.configurations[0]
+        original.name = "Palau"
+        original.connection.host = "bsd"
+        original.connection.user = "albert"
+        original.connection.keyPath = ""
+        original.connection.addForwardRule()
+        let originalPorts = original.connection.forwardRules.map(\.localPort)
+
+        let copy = try #require(store.duplicate(id: original.id))
+        #expect(store.configurations.map(\.id) == [original.id, copy.id, store.configurations[2].id])
+        #expect(store.selectedID == copy.id)
+        #expect(copy.name == SSHConfigStore.copyName(of: "Palau", existing: []))
+        #expect(copy.connection.host == "bsd")
+        #expect(copy.connection.user == "albert")
+        #expect(copy.connection.keyPath == "")
+        #expect(copy.connection.forwardRules.map(\.name) == original.connection.forwardRules.map(\.name))
+        #expect(Set(copy.connection.forwardRules.map(\.id)).isDisjoint(with: original.connection.forwardRules.map(\.id)))
+
+        // No local port is shared with any other configuration.
+        let others = store.configurations.filter { $0.id != copy.id }
+            .flatMap { $0.connection.forwardRules.map(\.localPort) }
+        #expect(Set(copy.connection.forwardRules.map(\.localPort)).isDisjoint(with: others))
+        #expect(original.connection.forwardRules.map(\.localPort) == originalPorts)
+        #expect(copy.connection.validationError() == nil)
+
+        let second = try #require(store.duplicate(id: original.id))
+        #expect(second.name != copy.name)
+        #expect(store.duplicate(id: UUID()) == nil)
+    }
+
+    @Test func copyNamesAreUnique() {
+        let first = SSHConfigStore.copyName(of: "A", existing: [])
+        let second = SSHConfigStore.copyName(of: "A", existing: ["A", first])
+        #expect(first != second)
+        #expect(first.contains("A") && second.contains("2"))
+    }
+
     @Test func saveReloadMoveAndRemove() throws {
         let store = makeStore()
         for _ in 0..<3 { store.addConfiguration() }

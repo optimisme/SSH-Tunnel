@@ -37,6 +37,35 @@
   "@delete": {
     "description": "Button"
   },
+  "duplicate": "Duplicate",
+  "@duplicate": {
+    "description": "Context menu item that copies a configuration"
+  },
+  "deleteEllipsis": "Delete…",
+  "@deleteEllipsis": {
+    "description": "Context menu item; asks for confirmation"
+  },
+  "copyName": "{name} copy",
+  "@copyName": {
+    "description": "Name of a duplicated configuration",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "copyNameNumbered": "{name} copy {index}",
+  "@copyNameNumbered": {
+    "description": "Name of a further duplicate",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "index": {
+        "type": "int"
+      }
+    }
+  },
   "cancel": "Cancel",
   "@cancel": {
     "description": "Button"

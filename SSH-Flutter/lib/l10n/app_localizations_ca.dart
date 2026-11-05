@@ -35,6 +35,22 @@ class AppLocalizationsCa extends AppLocalizations {
   String get delete => 'Elimina';
 
   @override
+  String get duplicate => 'Duplica';
+
+  @override
+  String get deleteEllipsis => 'Elimina…';
+
+  @override
+  String copyName(String name) {
+    return '$name còpia';
+  }
+
+  @override
+  String copyNameNumbered(String name, int index) {
+    return '$name còpia $index';
+  }
+
+  @override
   String get cancel => 'Cancel·la';
 
   @override

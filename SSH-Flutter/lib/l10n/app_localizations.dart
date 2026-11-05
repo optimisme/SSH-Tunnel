@@ -148,6 +148,30 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get delete;
 
+  /// Context menu item that copies a configuration
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicate;
+
+  /// Context menu item; asks for confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Delete…'**
+  String get deleteEllipsis;
+
+  /// Name of a duplicated configuration
+  ///
+  /// In en, this message translates to:
+  /// **'{name} copy'**
+  String copyName(String name);
+
+  /// Name of a further duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'{name} copy {index}'**
+  String copyNameNumbered(String name, int index);
+
   /// Button
   ///
   /// In en, this message translates to:

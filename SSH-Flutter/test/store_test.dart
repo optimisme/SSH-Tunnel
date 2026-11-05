@@ -28,7 +28,9 @@ void main() {
     ]);
     // Each new configuration gets a free local port.
     expect(
-      store.configurations.map((c) => c.connection.forwardRules.first.localPort),
+      store.configurations.map(
+        (c) => c.connection.forwardRules.first.localPort,
+      ),
       ['5901', '5902', '5903'],
     );
     store.move(2, 0);
@@ -55,6 +57,74 @@ void main() {
     expect(store.selectedId, ids[1]);
     store.remove(ids[1]);
     expect(store.selectedId, isNull);
+  });
+
+  test('duplicate copies settings with fresh ids and free ports', () async {
+    final store = await open();
+    store.addConfiguration();
+    store.addConfiguration();
+    final original = store.configurations[0];
+    original.setName('Palau');
+    original.connection
+      ..setHost('bsd')
+      ..setUser('albert')
+      ..setKeyPath('')
+      ..addForwardRule();
+    final originalPorts = original.connection.forwardRules
+        .map((r) => r.localPort)
+        .toList();
+
+    final copy = store.duplicate(original.id)!;
+    expect(store.configurations.map((c) => c.id).take(2), [
+      original.id,
+      copy.id,
+    ]);
+    expect(store.selectedId, copy.id);
+    expect(copy.name, 'Palau copy');
+    expect(copy.connection.host, 'bsd');
+    expect(copy.connection.user, 'albert');
+    expect(copy.connection.keyPath, '');
+    expect(
+      copy.connection.forwardRules.map((r) => r.name),
+      original.connection.forwardRules.map((r) => r.name),
+    );
+    expect(
+      copy.connection.forwardRules
+          .map((r) => r.id)
+          .toSet()
+          .intersection(
+            original.connection.forwardRules.map((r) => r.id).toSet(),
+          ),
+      isEmpty,
+    );
+    final others = store.configurations
+        .where((c) => c.id != copy.id)
+        .expand((c) => c.connection.forwardRules)
+        .map((r) => r.localPort)
+        .toSet();
+    expect(
+      copy.connection.forwardRules
+          .map((r) => r.localPort)
+          .toSet()
+          .intersection(others),
+      isEmpty,
+    );
+    expect(
+      original.connection.forwardRules.map((r) => r.localPort),
+      originalPorts,
+    );
+    expect(copy.connection.validationError(), isNull);
+
+    expect(store.duplicate(original.id)!.name, 'Palau copy 2');
+    expect(store.duplicate('missing'), isNull);
+
+    await store.saveNow();
+    final reloaded = await open();
+    expect(reloaded.configurations.map((c) => c.name).take(3), [
+      'Palau',
+      'Palau copy 2',
+      'Palau copy',
+    ]);
   });
 
   test('quit behavior persists', () async {

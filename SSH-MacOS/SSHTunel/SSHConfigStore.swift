@@ -194,6 +194,47 @@ final class SSHConfigStore: ObservableObject {
         selectedID = cfg.id
     }
 
+    /// Finder-style name for a copy: "Name copy", "Name copy 2", …
+    static func copyName(of name: String, existing: Set<String>) -> String {
+        var candidate = String(localized: "\(name) copy", comment: "Name of a duplicated configuration; the argument is the original name")
+        var index = 2
+        while existing.contains(candidate) {
+            candidate = String(localized: "\(name) copy \(index)", comment: "Name of a further duplicate; the arguments are the original name and a number")
+            index += 1
+        }
+        return candidate
+    }
+
+    /// Inserts a copy of the configuration right after it and selects it.
+    /// Rules get new ids, and local ports already used by any configuration
+    /// move to the next free port so both tunnels can run at once.
+    @discardableResult
+    func duplicate(id: UUID) -> SSHConfiguration? {
+        guard let idx = configurations.firstIndex(where: { $0.id == id }) else { return nil }
+        let source = configurations[idx]
+
+        var used = Set(configurations.flatMap { cfg in
+            cfg.connection.forwardRules.compactMap { Int($0.localPort.trimmingCharacters(in: .whitespaces)) }
+        })
+        var connection = source.connection.snapshot()
+        connection.forwardRules = connection.forwardRules.map { rule in
+            var copy = PortForwardRule(name: rule.name, localPort: rule.localPort,
+                                       remoteHost: rule.remoteHost, remotePort: rule.remotePort)
+            if var port = Int(rule.localPort.trimmingCharacters(in: .whitespaces)) {
+                while used.contains(port) && port < 65535 { port += 1 }
+                used.insert(port)
+                copy.localPort = "\(port)"
+            }
+            return copy
+        }
+
+        let name = Self.copyName(of: source.name, existing: Set(configurations.map(\.name)))
+        let cfg = SSHConfiguration(snapshot: .init(id: UUID(), name: name, connection: connection))
+        configurations.insert(cfg, at: idx + 1)
+        selectedID = cfg.id
+        return cfg
+    }
+
     func move(from source: IndexSet, to destination: Int) {
         configurations.move(fromOffsets: source, toOffset: destination)
     }

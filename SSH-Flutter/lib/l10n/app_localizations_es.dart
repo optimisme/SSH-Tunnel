@@ -35,6 +35,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get delete => 'Eliminar';
 
   @override
+  String get duplicate => 'Duplicar';
+
+  @override
+  String get deleteEllipsis => 'Eliminar…';
+
+  @override
+  String copyName(String name) {
+    return '$name copia';
+  }
+
+  @override
+  String copyNameNumbered(String name, int index) {
+    return '$name copia $index';
+  }
+
+  @override
   String get cancel => 'Cancelar';
 
   @override

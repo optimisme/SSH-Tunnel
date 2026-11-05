@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart' show kSecondaryButton;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ssh_flutter/main.dart';
 import 'package:ssh_flutter/ssh_config_store.dart';
@@ -40,6 +41,35 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   });
 
+  testWidgets('right-click on a configuration duplicates it', (tester) async {
+    tester.view.physicalSize = const Size(1000, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final dir = Directory.systemTemp.createTempSync('sshwidget');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final store = SSHConfigStore(saveDirectory: dir, observeSystem: false);
+    await tester.runAsync(store.initialize);
+    store.addConfiguration();
+    await tester.pumpWidget(SSHFlutterApp(store: store));
+    await tester.pump();
+
+    final row = find.text('Connection 1').first;
+    await tester.tap(row, buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Delete…'), findsOneWidget);
+    await tester.tap(find.text('Duplicate'));
+    await tester.pumpAndSettle();
+    expect(store.configurations.map((c) => c.name), [
+      'Connection 1',
+      'Connection 1 copy',
+    ]);
+    expect(find.text('Connection 1 copy'), findsWidgets);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 1));
+  });
+
   testWidgets('quit dialog returns the choice', (tester) async {
     tester.view.physicalSize = const Size(1000, 900);
     tester.view.devicePixelRatio = 1;
@@ -62,7 +92,10 @@ void main() {
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.text('Close the 2 open tunnels before quitting?'), findsOneWidget);
+    expect(
+      find.text('Close the 2 open tunnels before quitting?'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Don’t ask again'));
     await tester.tap(find.text('Close Tunnels'));
     for (var i = 0; i < 10; i++) {

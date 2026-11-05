@@ -1,6 +1,40 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ copy": {
+      "comment": "Name of a duplicated configuration; the argument is the original name",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ còpia"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ copia"
+          }
+        }
+      }
+    },
+    "%@ copy %lld": {
+      "comment": "Name of a further duplicate; the arguments are the original name and a number",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ còpia %2$lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ copia %2$lld"
+          }
+        }
+      }
+    },
     "A local port is in use by another process.": {
       "comment": "Log line",
       "localizations": {
@@ -651,6 +685,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Arrastrar para reordenar"
+          }
+        }
+      }
+    },
+    "Duplicate": {
+      "comment": "Context menu item that copies a configuration",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplica"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicar"
           }
         }
       }

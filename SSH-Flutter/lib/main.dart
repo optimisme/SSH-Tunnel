@@ -141,6 +141,7 @@ class _SSHHomePageState extends State<SSHHomePage> with WindowListener {
   double? _sidebarDragStartWidth;
   double? _sidebarDragStartX;
   final GlobalKey _settingsAnchor = GlobalKey();
+  final Map<String, GlobalKey> _rowAnchors = {};
 
   late final AppLifecycleListener _lifecycle;
   bool _exitApproved = false;
@@ -226,6 +227,33 @@ class _SSHHomePageState extends State<SSHHomePage> with WindowListener {
     if (ok == true) widget.store.remove(selected.id);
   }
 
+  /// Right-click menu of a sidebar row.
+  void _showRowMenu(BuildContext context, SSHConfiguration cfg) {
+    final t = tr(context);
+    final anchor = _rowAnchors[cfg.id];
+    if (anchor == null) return;
+    final controller = CDKDialogController();
+    CDKDialogsManager.showPopover(
+      context: context,
+      anchorKey: anchor,
+      type: CDKDialogPopoverType.down,
+      controller: controller,
+      child: PickerMenu(
+        entries: [
+          PickerEntry(t.duplicate, () {
+            controller.close();
+            widget.store.duplicate(cfg.id);
+          }),
+          null,
+          PickerEntry(t.deleteEllipsis, () {
+            controller.close();
+            unawaited(_confirmRemove(context, cfg));
+          }),
+        ],
+      ),
+    );
+  }
+
   void _showSettings(BuildContext context) {
     final controller = CDKDialogController();
     CDKDialogsManager.showPopover(
@@ -244,6 +272,8 @@ class _SSHHomePageState extends State<SSHHomePage> with WindowListener {
       animation: widget.store,
       builder: (context, _) {
         final selected = widget.store.selectedConfiguration;
+        final ids = widget.store.configurations.map((c) => c.id).toSet();
+        _rowAnchors.removeWhere((id, _) => !ids.contains(id));
         final scaffoldColor = CupertinoColors.systemGroupedBackground
             .resolveFrom(context);
         final sidebarColor = CupertinoColors.secondarySystemGroupedBackground
@@ -288,45 +318,58 @@ class _SSHHomePageState extends State<SSHHomePage> with WindowListener {
                             final sidebarTextColor =
                                 CDKThemeNotifier.of(context)!.changeNotifier
                                     .getSidebarColorText(isSelected, true);
+                            final anchor = _rowAnchors.putIfAbsent(
+                              cfg.id,
+                              GlobalKey.new,
+                            );
                             return Padding(
                               key: ValueKey<String>(cfg.id),
                               padding: const EdgeInsets.only(bottom: 6),
-                              child: CDKButtonSidebar(
-                                isSelected: isSelected,
-                                onSelected: () =>
-                                    widget.store.selectConfiguration(cfg.id),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 9,
-                                      height: 9,
-                                      decoration: BoxDecoration(
-                                        color: CupertinoDynamicColor.resolve(
-                                          cfg.connection.statusColor,
-                                          context,
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        cfg.name,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AppTextStyles.bodySmall.copyWith(
-                                          color: sidebarTextColor,
+                              child: GestureDetector(
+                                key: anchor,
+                                behavior: HitTestBehavior.opaque,
+                                onSecondaryTap: () {
+                                  widget.store.selectConfiguration(cfg.id);
+                                  _showRowMenu(context, cfg);
+                                },
+                                child: CDKButtonSidebar(
+                                  isSelected: isSelected,
+                                  onSelected: () =>
+                                      widget.store.selectConfiguration(cfg.id),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 9,
+                                        height: 9,
+                                        decoration: BoxDecoration(
+                                          color: CupertinoDynamicColor.resolve(
+                                            cfg.connection.statusColor,
+                                            context,
+                                          ),
+                                          shape: BoxShape.circle,
                                         ),
                                       ),
-                                    ),
-                                    ReorderableDragStartListener(
-                                      index: index,
-                                      child: DragHandle(
-                                        color: sidebarTextColor.withValues(
-                                          alpha: 0.6,
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          cfg.name,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: AppTextStyles.bodySmall
+                                              .copyWith(
+                                                color: sidebarTextColor,
+                                              ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      ReorderableDragStartListener(
+                                        index: index,
+                                        child: DragHandle(
+                                          color: sidebarTextColor.withValues(
+                                            alpha: 0.6,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             );

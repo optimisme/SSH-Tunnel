@@ -26,24 +26,27 @@ Match host foo
   test('hostAliases follows Include and ignores loops and duplicates', () {
     final conf = Directory('${dir.path}/conf.d')..createSync();
     File('${conf.path}/a').writeAsStringSync('Host alpha\nHost bsd\n');
-    File('${conf.path}/b').writeAsStringSync('Host beta\nInclude ${dir.path}/config\n');
-    File('${dir.path}/config').writeAsStringSync(
-      'Host bsd\nInclude ${conf.path}/*\n',
-    );
-    expect(
-      SshConfigFile.hostAliases(configPath: '${dir.path}/config'),
-      ['bsd', 'alpha', 'beta'],
-    );
+    File(
+      '${conf.path}/b',
+    ).writeAsStringSync('Host beta\nInclude ${dir.path}/config\n');
+    File(
+      '${dir.path}/config',
+    ).writeAsStringSync('Host bsd\nInclude ${conf.path}/*\n');
+    expect(SshConfigFile.hostAliases(configPath: '${dir.path}/config'), [
+      'bsd',
+      'alpha',
+      'beta',
+    ]);
   });
 
   test('privateKeys lists only private key files', () {
-    File('${dir.path}/id_ed25519').writeAsStringSync(
-      '-----BEGIN OPENSSH PRIVATE KEY-----\nabc\n',
-    );
+    File(
+      '${dir.path}/id_ed25519',
+    ).writeAsStringSync('-----BEGIN OPENSSH PRIVATE KEY-----\nabc\n');
     File('${dir.path}/id_ed25519.pub').writeAsStringSync('ssh-ed25519 AAAA');
-    File('${dir.path}/id_rsa').writeAsStringSync(
-      '-----BEGIN RSA PRIVATE KEY-----\nabc\n',
-    );
+    File(
+      '${dir.path}/id_rsa',
+    ).writeAsStringSync('-----BEGIN RSA PRIVATE KEY-----\nabc\n');
     File('${dir.path}/config').writeAsStringSync('Host x\n');
     File('${dir.path}/known_hosts').writeAsStringSync('x');
     File('${dir.path}/tunnelctl_abc.sock').writeAsStringSync('x');
@@ -70,7 +73,10 @@ identityfile ~/.ssh/id_ed25519
 
   test('home abbreviation round trip', () {
     final home = SshConfigFile.homePath!;
-    expect(SshConfigFile.abbreviatingHome('$home/.ssh/id_rsa'), '~/.ssh/id_rsa');
+    expect(
+      SshConfigFile.abbreviatingHome('$home/.ssh/id_rsa'),
+      '~/.ssh/id_rsa',
+    );
     expect(SshConfigFile.expandHome('~/.ssh/id_rsa'), '$home/.ssh/id_rsa');
     expect(SshConfigFile.abbreviatingHome('/etc/ssh'), '/etc/ssh');
   });

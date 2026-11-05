@@ -15,6 +15,8 @@ struct ContentView: View {
                         ConfigRow(configuration: cfg, connection: cfg.connection)
                             .tag(cfg.id)
                             .contextMenu {
+                                Button("Duplicate") { store.duplicate(id: cfg.id) }
+                                Divider()
                                 Button("Delete…", role: .destructive) { pendingDeletionID = cfg.id }
                             }
                     }
