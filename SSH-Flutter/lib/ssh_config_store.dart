@@ -5,10 +5,37 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import 'l10n.dart';
 import 'ssh_connection_controller.dart';
 
+/// What to do with open tunnels when the app quits.
+enum QuitBehavior { ask, closeTunnels, keepTunnels }
+
 class SSHConfigStore extends ChangeNotifier {
+  /// [saveDirectory] overrides the platform settings folder (tests).
+  /// With [observeSystem] false there is no wake detection or launch refresh.
+  SSHConfigStore({this.saveDirectory, this.observeSystem = true});
+
+  final Directory? saveDirectory;
+  final bool observeSystem;
+
   final List<SSHConfiguration> _configurations = [];
+  File? _settingsFile;
+  QuitBehavior _quitBehavior = QuitBehavior.ask;
+
+  QuitBehavior get quitBehavior => _quitBehavior;
+
+  set quitBehavior(QuitBehavior value) {
+    if (_quitBehavior == value) return;
+    _quitBehavior = value;
+    notifyListeners();
+    unawaited(_saveSettings());
+  }
+
+  List<SSHConfiguration> get runningConfigurations =>
+      _configurations.where((c) => c.connection.isRunning).toList();
+
+  static String defaultName(int index) => l10n.defaultConfigName(index);
   final List<VoidCallback> _detachers = [];
 
   String? selectedId;
@@ -28,9 +55,11 @@ class SSHConfigStore extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    final appSupportDir = await _appSupportDirectory();
+    final appSupportDir = saveDirectory ?? await _appSupportDirectory();
     await appSupportDir.create(recursive: true);
     _saveFile = File('${appSupportDir.path}/configs.json');
+    _settingsFile = File('${appSupportDir.path}/settings.json');
+    await _loadSettings();
     var needsIdMigrationSave = false;
 
     if (await _saveFile!.exists()) {
@@ -62,16 +91,20 @@ class SSHConfigStore extends ChangeNotifier {
       await _save();
     }
 
+    if (!observeSystem) return;
+
     // Show the real state of every tunnel (they survive app restarts via ControlPersist).
     for (final cfg in _configurations) {
       unawaited(cfg.connection.refresh());
     }
 
-    _wakeDetector = WakeDetector(onWake: () {
-      for (final cfg in _configurations) {
-        cfg.connection.systemDidWake();
-      }
-    })..start();
+    _wakeDetector = WakeDetector(
+      onWake: () {
+        for (final cfg in _configurations) {
+          cfg.connection.systemDidWake();
+        }
+      },
+    )..start();
   }
 
   void selectConfiguration(String id) {
@@ -83,7 +116,7 @@ class SSHConfigStore extends ChangeNotifier {
   void addConfiguration() {
     final names = _configurations.map((c) => c.name).toSet();
     var idx = _configurations.length + 1;
-    while (names.contains('Connexió $idx')) {
+    while (names.contains(defaultName(idx))) {
       idx += 1;
     }
 
@@ -97,7 +130,10 @@ class SSHConfigStore extends ChangeNotifier {
       port += 1;
     }
 
-    final cfg = SSHConfiguration(name: 'Connexió $idx', defaultLocalPort: '$port');
+    final cfg = SSHConfiguration(
+      name: defaultName(idx),
+      defaultLocalPort: '$port',
+    );
     _configurations.add(cfg);
     selectedId = cfg.id;
     _changed();
@@ -113,16 +149,64 @@ class SSHConfigStore extends ChangeNotifier {
   }
 
   void removeSelected() {
-    final selected = selectedConfiguration;
-    if (selected == null) return;
-    final index = _configurations.indexOf(selected);
+    final id = selectedId;
+    if (id != null) remove(id);
+  }
 
-    unawaited(selected.connection.stop());
-    _configurations.removeAt(index);
-    selectedId = _configurations.isEmpty
-        ? null
-        : _configurations[min(index, _configurations.length - 1)].id;
+  /// Removes a configuration, stopping its tunnel. The selection only moves
+  /// if the removed configuration was the selected one.
+  void remove(String id) {
+    final index = _configurations.indexWhere((c) => c.id == id);
+    if (index < 0) return;
+    final removed = _configurations.removeAt(index);
+    unawaited(removed.connection.stop());
+    if (selectedId == id) {
+      selectedId = _configurations.isEmpty
+          ? null
+          : _configurations[min(index, _configurations.length - 1)].id;
+    }
     _changed();
+  }
+
+  /// Stops every running tunnel and waits for them (used when quitting).
+  Future<void> stopAll() async {
+    await Future.wait(
+      runningConfigurations.map((c) => c.connection.stopAndWait()),
+    );
+  }
+
+  /// Writes pending changes immediately (used when quitting).
+  Future<void> saveNow() async {
+    _saveTimer?.cancel();
+    await _save();
+  }
+
+  Future<void> _loadSettings() async {
+    final file = _settingsFile;
+    if (file == null || !await file.exists()) return;
+    try {
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is Map) {
+        final raw = decoded['quitBehavior'];
+        _quitBehavior = QuitBehavior.values.firstWhere(
+          (b) => b.name == raw,
+          orElse: () => QuitBehavior.ask,
+        );
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveSettings() async {
+    final file = _settingsFile;
+    if (file == null) return;
+    try {
+      await file.writeAsString(
+        jsonEncode({'quitBehavior': _quitBehavior.name}),
+        flush: true,
+      );
+    } catch (e) {
+      debugPrint('SSH Túnel: failed to save settings: $e');
+    }
   }
 
   void _changed() {
@@ -164,7 +248,9 @@ class SSHConfigStore extends ChangeNotifier {
     if (file == null) return;
 
     const encoder = JsonEncoder.withIndent('  ');
-    final json = encoder.convert(_configurations.map((c) => c.toJson()).toList());
+    final json = encoder.convert(
+      _configurations.map((c) => c.toJson()).toList(),
+    );
     // Status/log changes also notify; skip the write if nothing persisted changed.
     if (json == _lastSavedJson) return;
 
@@ -196,7 +282,8 @@ class SSHConfigStore extends ChangeNotifier {
 
     if (Platform.isWindows) {
       final appData =
-          Platform.environment['APPDATA'] ?? Platform.environment['LOCALAPPDATA'];
+          Platform.environment['APPDATA'] ??
+          Platform.environment['LOCALAPPDATA'];
       if (appData != null && appData.isNotEmpty) {
         return Directory('$appData${Platform.pathSeparator}SSH-TunelApp');
       }
@@ -269,7 +356,8 @@ class WakeDetector {
     _lastWall = wall;
     _lastMono = mono;
 
-    final slept = wallDelta - monoDelta > const Duration(seconds: 15) ||
+    final slept =
+        wallDelta - monoDelta > const Duration(seconds: 15) ||
         wallDelta > const Duration(seconds: 90);
     if (slept) onWake();
   }
@@ -296,7 +384,7 @@ class SSHConfiguration extends ChangeNotifier {
 
     return SSHConfiguration._(
       id: coerceUuidString(json['id']),
-      name: (json['name'] as String?) ?? 'Connexió',
+      name: (json['name'] as String?) ?? l10n.fallbackConfigName,
       connection: connection,
     );
   }

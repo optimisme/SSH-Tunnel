@@ -1,0 +1,390 @@
+{
+  "@@locale": "en",
+  "appTitle": "SSH Túnel",
+  "@appTitle": {
+    "description": "App name, not translated"
+  },
+  "sidebarTitle": "SSH Configurations",
+  "@sidebarTitle": {
+    "description": "Sidebar title"
+  },
+  "addConfiguration": "Add Configuration",
+  "@addConfiguration": {
+    "description": "Button"
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Short button label"
+  },
+  "deleteConfiguration": "Delete Configuration",
+  "@deleteConfiguration": {
+    "description": "Button tooltip"
+  },
+  "deleteConfirmTitle": "Delete “{name}”?",
+  "@deleteConfirmTitle": {
+    "description": "Confirmation title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteConfirmMessage": "If the tunnel is active, it will be stopped.",
+  "@deleteConfirmMessage": {
+    "description": "Confirmation message"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Button"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Button"
+  },
+  "noSelection": "Select a configuration or add a new one.",
+  "@noSelection": {
+    "description": "Empty detail"
+  },
+  "configurationName": "Configuration Name",
+  "@configurationName": {
+    "description": "Section title"
+  },
+  "sshConnection": "SSH Connection",
+  "@sshConnection": {
+    "description": "Section title"
+  },
+  "host": "Host",
+  "@host": {
+    "description": "Field label"
+  },
+  "hostPlaceholder": "Host name, IP or ~/.ssh/config alias",
+  "@hostPlaceholder": {
+    "description": "Placeholder"
+  },
+  "user": "User",
+  "@user": {
+    "description": "Field label"
+  },
+  "userPlaceholderDefault": "Default ({name})",
+  "@userPlaceholderDefault": {
+    "description": "Placeholder; login name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "userPlaceholderFromConfig": "From ~/.ssh/config ({name})",
+  "@userPlaceholderFromConfig": {
+    "description": "Placeholder; user name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "port": "Port",
+  "@port": {
+    "description": "Field label"
+  },
+  "key": "Key",
+  "@key": {
+    "description": "Field label: SSH private key"
+  },
+  "keyPlaceholder": "Use ssh-agent",
+  "@keyPlaceholder": {
+    "description": "Placeholder"
+  },
+  "fromSshConfig": "From ~/.ssh/config: {summary}",
+  "@fromSshConfig": {
+    "description": "Hint; user@host:port",
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "hostsFromSshConfig": "Hosts from ~/.ssh/config",
+  "@hostsFromSshConfig": {
+    "description": "Tooltip"
+  },
+  "noHostsInSshConfig": "No hosts in ~/.ssh/config",
+  "@noHostsInSshConfig": {
+    "description": "Menu placeholder"
+  },
+  "chooseKey": "Choose a private key",
+  "@chooseKey": {
+    "description": "Tooltip"
+  },
+  "useAgent": "Use ssh-agent and ~/.ssh/config",
+  "@useAgent": {
+    "description": "Menu item"
+  },
+  "chooseFile": "Choose…",
+  "@chooseFile": {
+    "description": "Menu item"
+  },
+  "choose": "Choose",
+  "@choose": {
+    "description": "File panel button"
+  },
+  "forwardRules": "Port Forwarding Rules",
+  "@forwardRules": {
+    "description": "Section title"
+  },
+  "ruleName": "Name",
+  "@ruleName": {
+    "description": "Label"
+  },
+  "ruleLocal": "Local",
+  "@ruleLocal": {
+    "description": "Label"
+  },
+  "addRule": "Add Rule",
+  "@addRule": {
+    "description": "Button"
+  },
+  "deleteRule": "Delete Rule",
+  "@deleteRule": {
+    "description": "Tooltip"
+  },
+  "dragToReorder": "Drag to reorder",
+  "@dragToReorder": {
+    "description": "Tooltip"
+  },
+  "autoReconnect": "Reconnect automatically if the connection drops (and after waking from sleep)",
+  "@autoReconnect": {
+    "description": "Switch label"
+  },
+  "sshOutput": "ssh Output",
+  "@sshOutput": {
+    "description": "Section title"
+  },
+  "clear": "Clear",
+  "@clear": {
+    "description": "Button"
+  },
+  "connect": "Connect",
+  "@connect": {
+    "description": "Button"
+  },
+  "disconnect": "Disconnect",
+  "@disconnect": {
+    "description": "Button"
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Button"
+  },
+  "statusActive": "Active",
+  "@statusActive": {
+    "description": "Status"
+  },
+  "statusConnecting": "Connecting",
+  "@statusConnecting": {
+    "description": "Status"
+  },
+  "statusStopping": "Stopping",
+  "@statusStopping": {
+    "description": "Status"
+  },
+  "statusStopped": "Stopped",
+  "@statusStopped": {
+    "description": "Status"
+  },
+  "statusError": "Error",
+  "@statusError": {
+    "description": "Status"
+  },
+  "detailConnecting": "Connecting…",
+  "@detailConnecting": {
+    "description": "Status detail"
+  },
+  "detailRetrying": "Retrying in {seconds} s…",
+  "@detailRetrying": {
+    "description": "Status detail",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "detailStopping": "Stopping…",
+  "@detailStopping": {
+    "description": "Status detail"
+  },
+  "issueMissingHost": "Enter a host",
+  "@issueMissingHost": {
+    "description": "Error"
+  },
+  "issueInvalidSshPort": "Invalid SSH port",
+  "@issueInvalidSshPort": {
+    "description": "Error"
+  },
+  "issueNoRules": "No port forwarding rules",
+  "@issueNoRules": {
+    "description": "Error"
+  },
+  "issueInvalidPorts": "Invalid ports in “{rule}”",
+  "@issueInvalidPorts": {
+    "description": "Error",
+    "placeholders": {
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "issueMissingRemoteHost": "Missing remote host in “{rule}”",
+  "@issueMissingRemoteHost": {
+    "description": "Error",
+    "placeholders": {
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "issueDuplicateLocalPort": "Local port {port} is used twice",
+  "@issueDuplicateLocalPort": {
+    "description": "Error",
+    "placeholders": {
+      "port": {
+        "type": "String"
+      }
+    }
+  },
+  "issueHostKeyChanged": "The host key changed (check ~/.ssh/known_hosts)",
+  "@issueHostKeyChanged": {
+    "description": "Error"
+  },
+  "issueLocalPortInUse": "Local port in use ({ports})",
+  "@issueLocalPortInUse": {
+    "description": "Error",
+    "placeholders": {
+      "ports": {
+        "type": "String"
+      }
+    }
+  },
+  "issueAuthentication": "Authentication failed (check the key or ssh-agent)",
+  "@issueAuthentication": {
+    "description": "Error"
+  },
+  "issueSshConfiguration": "SSH configuration error",
+  "@issueSshConfiguration": {
+    "description": "Error"
+  },
+  "issueSshExited": "ssh exited (code {code})",
+  "@issueSshExited": {
+    "description": "Error",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "issueConnectionLost": "Connection lost",
+  "@issueConnectionLost": {
+    "description": "Error"
+  },
+  "issueCannotRunSsh": "Cannot run ssh",
+  "@issueCannotRunSsh": {
+    "description": "Error"
+  },
+  "logWokeFromSleep": "Woke from sleep: restarting the tunnel",
+  "@logWokeFromSleep": {
+    "description": "Log"
+  },
+  "logPortUsedByOther": "A local port is in use by another process.",
+  "@logPortUsedByOther": {
+    "description": "Log"
+  },
+  "logCannotRunSsh": "Cannot run ssh: {error}",
+  "@logCannotRunSsh": {
+    "description": "Log",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "logCouldNotStopProcess": "Could not stop ssh process {pid}",
+  "@logCouldNotStopProcess": {
+    "description": "Log",
+    "placeholders": {
+      "pid": {
+        "type": "String"
+      }
+    }
+  },
+  "defaultConfigName": "Connection {index}",
+  "@defaultConfigName": {
+    "description": "Default configuration name",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "fallbackConfigName": "Connection",
+  "@fallbackConfigName": {
+    "description": "Fallback configuration name"
+  },
+  "defaultRuleName": "Rule {index}",
+  "@defaultRuleName": {
+    "description": "Default rule name",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "quitMessage": "Tunnels you keep running stay available after SSH Túnel quits, and the app picks them up again the next time it opens.",
+  "@quitMessage": {
+    "description": "Quit dialog message"
+  },
+  "closeTunnels": "Close Tunnels",
+  "@closeTunnels": {
+    "description": "Quit dialog button"
+  },
+  "keepRunning": "Keep Running",
+  "@keepRunning": {
+    "description": "Quit dialog button"
+  },
+  "dontAskAgain": "Don’t ask again",
+  "@dontAskAgain": {
+    "description": "Quit dialog checkbox"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Tooltip"
+  },
+  "quitBehaviorLabel": "When quitting with open tunnels:",
+  "@quitBehaviorLabel": {
+    "description": "Settings label"
+  },
+  "quitAsk": "Ask",
+  "@quitAsk": {
+    "description": "Settings option"
+  },
+  "quitClose": "Close the tunnels",
+  "@quitClose": {
+    "description": "Settings option"
+  },
+  "quitKeep": "Keep the tunnels running",
+  "@quitKeep": {
+    "description": "Settings option"
+  },
+  "done": "Done",
+  "@done": {
+    "description": "Button"
+  },
+  "quitTitle": "{count, plural, =1{Close the open tunnel before quitting?} other{Close the {count} open tunnels before quitting?}}",
+  "@quitTitle": {
+    "description": "Quit dialog title",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}

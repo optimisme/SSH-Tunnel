@@ -1,0 +1,33 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "CFBundleDisplayName": {
+      "comment": "App name",
+      "shouldTranslate": false
+    },
+    "NSLocalNetworkUsageDescription": {
+      "comment": "Privacy prompt for local network access",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SSH Túnel needs local network access to open SSH tunnels to hosts on your network."
+          }
+        },
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’SSH Túnel necessita accés a la xarxa local per obrir túnels SSH cap als hosts de la teva xarxa."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SSH Túnel necesita acceso a la red local para abrir túneles SSH a los hosts de tu red."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

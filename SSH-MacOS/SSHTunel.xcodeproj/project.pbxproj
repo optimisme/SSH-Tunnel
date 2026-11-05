@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		7999D5B12F26667700303098 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7999D5982F26667700303098 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7999D59F2F26667700303098;
+			remoteInfo = SSHTunel;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		7999D5A02F26667700303098 /* SSHTunel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SSHTunel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7999D5B22F26667700303098 /* SSHTunelTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SSHTunelTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +27,22 @@
 			path = SSHTunel;
 			sourceTree = "<group>";
 		};
+		7999D5B32F26667700303098 /* SSHTunelTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SSHTunelTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		7999D59D2F26667700303098 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7999D5B42F26667700303098 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				7999D5A22F26667700303098 /* SSHTunel */,
+				7999D5B32F26667700303098 /* SSHTunelTests */,
 				7999D5A12F26667700303098 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				7999D5A02F26667700303098 /* SSHTunel.app */,
+				7999D5B22F26667700303098 /* SSHTunelTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +95,29 @@
 			productReference = 7999D5A02F26667700303098 /* SSHTunel.app */;
 			productType = "com.apple.product-type.application";
 		};
+		7999D5B72F26667700303098 /* SSHTunelTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7999D5B82F26667700303098 /* Build configuration list for PBXNativeTarget "SSHTunelTests" */;
+			buildPhases = (
+				7999D5B52F26667700303098 /* Sources */,
+				7999D5B42F26667700303098 /* Frameworks */,
+				7999D5B62F26667700303098 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7999D5B92F26667700303098 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7999D5B32F26667700303098 /* SSHTunelTests */,
+			);
+			name = SSHTunelTests;
+			packageProductDependencies = (
+			);
+			productName = SSHTunelTests;
+			productReference = 7999D5B22F26667700303098 /* SSHTunelTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -83,6 +131,10 @@
 					7999D59F2F26667700303098 = {
 						CreatedOnToolsVersion = 26.2;
 					};
+					7999D5B72F26667700303098 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 7999D59F2F26667700303098;
+					};
 				};
 			};
 			buildConfigurationList = 7999D59B2F26667700303098 /* Build configuration list for PBXProject "SSHTunel" */;
@@ -91,6 +143,8 @@
 			knownRegions = (
 				en,
 				Base,
+				ca,
+				es,
 			);
 			mainGroup = 7999D5972F26667700303098;
 			minimizedProjectReferenceProxies = 1;
@@ -100,12 +154,20 @@
 			projectRoot = "";
 			targets = (
 				7999D59F2F26667700303098 /* SSHTunel */,
+				7999D5B72F26667700303098 /* SSHTunelTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		7999D59E2F26667700303098 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7999D5B62F26667700303098 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +184,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7999D5B52F26667700303098 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7999D5B92F26667700303098 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7999D59F2F26667700303098 /* SSHTunel */;
+			targetProxy = 7999D5B12F26667700303098 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7999D5A92F26667900303098 /* Debug */ = {
@@ -255,7 +332,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "SSHTunel needs local network access to open SSH tunnels to hosts on your LAN.";
+				INFOPLIST_KEY_CFBundleDisplayName = "SSH Túnel";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "SSH Túnel needs local network access to open SSH tunnels to hosts on your network.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -285,7 +364,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "SSHTunel needs local network access to open SSH tunnels to hosts on your LAN.";
+				INFOPLIST_KEY_CFBundleDisplayName = "SSH Túnel";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "SSH Túnel needs local network access to open SSH tunnels to hosts on your network.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -300,6 +381,46 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		7999D5BA2F26667700303098 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.sshtunelTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SSHTunel.app/Contents/MacOS/SSHTunel";
+			};
+			name = Debug;
+		};
+		7999D5BB2F26667700303098 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.sshtunelTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SSHTunel.app/Contents/MacOS/SSHTunel";
 			};
 			name = Release;
 		};
@@ -320,6 +441,15 @@
 			buildConfigurations = (
 				7999D5AC2F26667900303098 /* Debug */,
 				7999D5AD2F26667900303098 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7999D5B82F26667700303098 /* Build configuration list for PBXNativeTarget "SSHTunelTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7999D5BA2F26667700303098 /* Debug */,
+				7999D5BB2F26667700303098 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

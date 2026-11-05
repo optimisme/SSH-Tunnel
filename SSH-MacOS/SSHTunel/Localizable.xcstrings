@@ -1,0 +1,1548 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "A local port is in use by another process.": {
+      "comment": "Log line",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un port local està ocupat per un altre procés."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otro proceso está usando un puerto local."
+          }
+        }
+      }
+    },
+    "Active": {
+      "comment": "Tunnel status",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actiu"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo"
+          }
+        }
+      }
+    },
+    "Add Configuration": {
+      "comment": "Toolbar button",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afegeix una configuració"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadir configuración"
+          }
+        }
+      }
+    },
+    "Add Rule": {
+      "comment": "Button that adds a port forwarding rule",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afegeix una regla"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadir regla"
+          }
+        }
+      }
+    },
+    "Ask": {
+      "comment": "Settings option: what to do with open tunnels on quit",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preguntar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preguntar"
+          }
+        }
+      }
+    },
+    "Authentication failed (check the key or ssh-agent)": {
+      "comment": "Tunnel error",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error d’autenticació (revisa la clau o l’ssh-agent)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error de autenticación (revisa la clave o ssh-agent)"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "comment": "Quit alert button",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel·la"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
+          }
+        }
+      }
+    },
+    "Cannot run ssh": {
+      "comment": "Tunnel error",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No es pot executar ssh"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se puede ejecutar ssh"
+          }
+        }
+      }
+    },
+    "Cannot run ssh: %@": {
+      "comment": "Log line; the argument is a system error",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No es pot executar ssh: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se puede ejecutar ssh: %@"
+          }
+        }
+      }
+    },
+    "Choose": {
+      "comment": "Open panel button",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tria"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elegir"
+          }
+        }
+      }
+    },
+    "Choose a private key": {
+      "comment": "Help tag of the key menu",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tria una clau privada"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elegir una clave privada"
+          }
+        }
+      }
+    },
+    "Choose the private key for this connection.": {
+      "comment": "Open panel message",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tria la clau privada per a aquesta connexió."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige la clave privada para esta conexión."
+          }
+        }
+      }
+    },
+    "Choose…": {
+      "comment": "Key menu item that opens a file panel",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tria…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elegir…"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "comment": "Button that clears the ssh output",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neteja"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Borrar"
+          }
+        }
+      }
+    },
+    "Close %lld open tunnels before quitting?": {
+      "comment": "Quit alert title; the argument is the number of open tunnels",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Close the open tunnel before quitting?"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Close the %lld open tunnels before quitting?"
+                }
+              }
+            }
+          }
+        },
+        "ca": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vols tancar el túnel obert abans de sortir?"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vols tancar els %lld túnels oberts abans de sortir?"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "¿Cerrar el túnel abierto antes de salir?"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "¿Cerrar los %lld túneles abiertos antes de salir?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Close Tunnels": {
+      "comment": "Quit alert button",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tanca els túnels"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerrar túneles"
+          }
+        }
+      }
+    },
+    "Close the tunnels": {
+      "comment": "Settings option: what to do with open tunnels on quit",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tancar els túnels"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerrar los túneles"
+          }
+        }
+      }
+    },
+    "Configuration Name": {
+      "comment": "Section title",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom de la configuració"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre de la configuración"
+          }
+        }
+      }
+    },
+    "Connect": {
+      "comment": "Button that starts the tunnel",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecta"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar"
+          }
+        }
+      }
+    },
+    "Connecting": {
+      "comment": "Tunnel status",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connectant"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectando"
+          }
+        }
+      }
+    },
+    "Connecting…": {
+      "comment": "Tunnel status detail",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connectant…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectando…"
+          }
+        }
+      }
+    },
+    "Connection": {
+      "comment": "Fallback configuration name",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexió"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conexión"
+          }
+        }
+      }
+    },
+    "Connection %lld": {
+      "comment": "Default name of a new SSH configuration",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexió %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conexión %lld"
+          }
+        }
+      }
+    },
+    "Connection lost": {
+      "comment": "Tunnel error",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S’ha perdut la connexió"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se ha perdido la conexión"
+          }
+        }
+      }
+    },
+    "Could not build the SMB address for local port %@": {
+      "comment": "Log line",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No s’ha pogut crear l’adreça SMB per al port local %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha podido crear la dirección SMB para el puerto local %@"
+          }
+        }
+      }
+    },
+    "Could not stop ssh process %lld": {
+      "comment": "Log line; the argument is a process ID",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No s’ha pogut aturar el procés ssh %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha podido detener el proceso ssh %lld"
+          }
+        }
+      }
+    },
+    "Could not unmount SMB volume %@": {
+      "comment": "Log line; the argument is a path",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No s’ha pogut desmuntar el volum SMB %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha podido desmontar el volumen SMB %@"
+          }
+        }
+      }
+    },
+    "Default (%@)": {
+      "comment": "Placeholder of the user field; the argument is the login name",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per omissió (%@)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por omisión (%@)"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "comment": "Confirmation button",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar"
+          }
+        }
+      }
+    },
+    "Delete Configuration": {
+      "comment": "Toolbar button",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina la configuració"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar configuración"
+          }
+        }
+      }
+    },
+    "Delete Rule": {
+      "comment": "Button that deletes a port forwarding rule",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina la regla"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar regla"
+          }
+        }
+      }
+    },
+    "Delete “%@”?": {
+      "comment": "Confirmation title; the argument is a configuration name",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vols eliminar «%@»?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Eliminar «%@»?"
+          }
+        }
+      }
+    },
+    "Delete…": {
+      "comment": "Context menu item",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar…"
+          }
+        }
+      }
+    },
+    "Disconnect": {
+      "comment": "Button that stops the tunnel",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconnecta"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectar"
+          }
+        }
+      }
+    },
+    "Don’t ask again": {
+      "comment": "Quit alert checkbox",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No ho tornis a preguntar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No volver a preguntar"
+          }
+        }
+      }
+    },
+    "Drag to reorder": {
+      "comment": "Help tag of the drag handle",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrossega per reordenar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrastrar para reordenar"
+          }
+        }
+      }
+    },
+    "Enter a host": {
+      "comment": "Tunnel error",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indica un host"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Introduce un host"
+          }
+        }
+      }
+    },
+    "Error": {
+      "comment": "Tunnel status",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error"
+          }
+        }
+      }
+    },
+    "Finder could not open %@": {
+      "comment": "Log line; the argument is an smb:// address",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El Finder no ha pogut obrir %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El Finder no ha podido abrir %@"
+          }
+        }
+      }
+    },
+    "From ~/.ssh/config (%@)": {
+      "comment": "Placeholder of the user field; the argument is a user name",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De ~/.ssh/config (%@)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De ~/.ssh/config (%@)"
+          }
+        }
+      }
+    },
+    "From ~/.ssh/config: %@": {
+      "comment": "Hint under the host field; the argument is user@host:port",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De ~/.ssh/config: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De ~/.ssh/config: %@"
+          }
+        }
+      }
+    },
+    "Host": {
+      "comment": "Field label",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Host"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Host"
+          }
+        }
+      }
+    },
+    "Host name, IP or ~/.ssh/config alias": {
+      "comment": "Placeholder of the host field",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom del host, IP o àlies de ~/.ssh/config"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre del host, IP o alias de ~/.ssh/config"
+          }
+        }
+      }
+    },
+    "Hosts from ~/.ssh/config": {
+      "comment": "Help tag of the host menu",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hosts de ~/.ssh/config"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hosts de ~/.ssh/config"
+          }
+        }
+      }
+    },
+    "If the tunnel is active, it will be stopped.": {
+      "comment": "Delete confirmation message",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si el túnel és actiu, s’aturarà."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si el túnel está activo, se detendrá."
+          }
+        }
+      }
+    },
+    "Invalid SSH port": {
+      "comment": "Tunnel error",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El port SSH no és vàlid"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El puerto SSH no es válido"
+          }
+        }
+      }
+    },
+    "Invalid ports in “%@”": {
+      "comment": "Tunnel error; the argument is a rule name",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ports no vàlids a «%@»"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puertos no válidos en «%@»"
+          }
+        }
+      }
+    },
+    "Keep Running": {
+      "comment": "Quit alert button",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén-los oberts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantenerlos abiertos"
+          }
+        }
+      }
+    },
+    "Keep the tunnels running": {
+      "comment": "Settings option: what to do with open tunnels on quit",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantenir els túnels oberts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantener los túneles abiertos"
+          }
+        }
+      }
+    },
+    "Key": {
+      "comment": "Field label: SSH private key",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clau"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clave"
+          }
+        }
+      }
+    },
+    "Local": {
+      "comment": "Label before the local port of a rule",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local"
+          }
+        }
+      }
+    },
+    "Local port": {
+      "comment": "Accessibility label",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port local"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puerto local"
+          }
+        }
+      }
+    },
+    "Local port %lld is used twice": {
+      "comment": "Tunnel error",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El port local %lld està repetit"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El puerto local %lld está repetido"
+          }
+        }
+      }
+    },
+    "Local port in use (%@)": {
+      "comment": "Tunnel error; the argument is a list of ports",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port local ocupat (%@)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puerto local en uso (%@)"
+          }
+        }
+      }
+    },
+    "Missing remote host in “%@”": {
+      "comment": "Tunnel error; the argument is a rule name",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falta el host remot a «%@»"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falta el host remoto en «%@»"
+          }
+        }
+      }
+    },
+    "Move Down": {
+      "comment": "Menu item that moves a rule",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mou avall"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajar"
+          }
+        }
+      }
+    },
+    "Move Up": {
+      "comment": "Menu item that moves a rule",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mou amunt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subir"
+          }
+        }
+      }
+    },
+    "Name": {
+      "comment": "Label and placeholder",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre"
+          }
+        }
+      }
+    },
+    "No Configuration Selected": {
+      "comment": "Empty detail title",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cap configuració seleccionada"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ninguna configuración seleccionada"
+          }
+        }
+      }
+    },
+    "No hosts in ~/.ssh/config": {
+      "comment": "Disabled menu item",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hi ha hosts a ~/.ssh/config"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay hosts en ~/.ssh/config"
+          }
+        }
+      }
+    },
+    "No port forwarding rules": {
+      "comment": "Tunnel error",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hi ha cap regla de reenviament de port"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay reglas de reenvío de puertos"
+          }
+        }
+      }
+    },
+    "Opening the SMB share in Finder: %@": {
+      "comment": "Log line",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S’obre el recurs SMB al Finder: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abriendo el recurso SMB en el Finder: %@"
+          }
+        }
+      }
+    },
+    "Port": {
+      "comment": "Field label: SSH port",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puerto"
+          }
+        }
+      }
+    },
+    "Port Forwarding Rules": {
+      "comment": "Section title",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regles de reenviament de port"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reglas de reenvío de puertos"
+          }
+        }
+      }
+    },
+    "Reconnect automatically if the connection drops (and after waking from sleep)": {
+      "comment": "Checkbox",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconnecta automàticament si es perd la connexió (i en sortir del repòs)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volver a conectar automáticamente si se pierde la conexión (y al salir del reposo)"
+          }
+        }
+      }
+    },
+    "Refresh": {
+      "comment": "Button that re-checks the tunnel state",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualitza"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualizar"
+          }
+        }
+      }
+    },
+    "Remote host": {
+      "comment": "Accessibility label",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Host remot"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Host remoto"
+          }
+        }
+      }
+    },
+    "Remote port": {
+      "comment": "Accessibility label",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port remot"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puerto remoto"
+          }
+        }
+      }
+    },
+    "Reorder": {
+      "comment": "Accessibility label of the drag handle",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reordena"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reordenar"
+          }
+        }
+      }
+    },
+    "Retrying in %lld s…": {
+      "comment": "Tunnel status detail; the argument is seconds",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nou intent d’aquí a %lld s…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reintentando en %lld s…"
+          }
+        }
+      }
+    },
+    "Rule %lld": {
+      "comment": "Default name of a port forwarding rule",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regla %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regla %lld"
+          }
+        }
+      }
+    },
+    "SSH Configurations": {
+      "comment": "Sidebar section title",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configuracions SSH"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configuraciones SSH"
+          }
+        }
+      }
+    },
+    "SSH Connection": {
+      "comment": "Section title",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexió SSH"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conexión SSH"
+          }
+        }
+      }
+    },
+    "SSH Túnel": {
+      "comment": "App name",
+      "shouldTranslate": false
+    },
+    "SSH configuration error": {
+      "comment": "Tunnel error",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error de configuració d’SSH"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error de configuración de SSH"
+          }
+        }
+      }
+    },
+    "Select a configuration or add a new one.": {
+      "comment": "Empty detail message",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecciona una configuració o afegeix-ne una de nova."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecciona una configuración o añade una nueva."
+          }
+        }
+      }
+    },
+    "Stopped": {
+      "comment": "Tunnel status",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aturat"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detenido"
+          }
+        }
+      }
+    },
+    "Stopping": {
+      "comment": "Tunnel status",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aturant"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deteniendo"
+          }
+        }
+      }
+    },
+    "Stopping…": {
+      "comment": "Tunnel status detail",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aturant…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deteniendo…"
+          }
+        }
+      }
+    },
+    "The host key changed (check ~/.ssh/known_hosts)": {
+      "comment": "Tunnel error",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La clau del host ha canviat (revisa ~/.ssh/known_hosts)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La clave del host ha cambiado (revisa ~/.ssh/known_hosts)"
+          }
+        }
+      }
+    },
+    "Tunnels you keep running stay available after SSH Túnel quits, and the app picks them up again the next time it opens.": {
+      "comment": "Quit alert message",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Els túnels que mantinguis oberts continuaran funcionant quan surtis de l’SSH Túnel, i l’app els recuperarà la pròxima vegada que l’obris."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los túneles que mantengas abiertos seguirán funcionando al salir de SSH Túnel, y la app los recuperará la próxima vez que la abras."
+          }
+        }
+      }
+    },
+    "Unmounted SMB volume %@": {
+      "comment": "Log line; the argument is a path",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "S’ha desmuntat el volum SMB %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se ha desmontado el volumen SMB %@"
+          }
+        }
+      }
+    },
+    "Use ssh-agent": {
+      "comment": "Placeholder of the key field",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usa l’ssh-agent"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usar ssh-agent"
+          }
+        }
+      }
+    },
+    "Use ssh-agent and ~/.ssh/config": {
+      "comment": "Key menu item",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usa l’ssh-agent i ~/.ssh/config"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usar ssh-agent y ~/.ssh/config"
+          }
+        }
+      }
+    },
+    "User": {
+      "comment": "Field label",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usuari"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usuario"
+          }
+        }
+      }
+    },
+    "When quitting with open tunnels:": {
+      "comment": "Settings label",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En sortir amb túnels oberts:"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al salir con túneles abiertos:"
+          }
+        }
+      }
+    },
+    "Woke from sleep: restarting the tunnel": {
+      "comment": "Log line",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortida del repòs: es reinicia el túnel"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fin del reposo: se reinicia el túnel"
+          }
+        }
+      }
+    },
+    "ssh Output": {
+      "comment": "Section title",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortida d’ssh"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salida de ssh"
+          }
+        }
+      }
+    },
+    "ssh exited (code %lld)": {
+      "comment": "Tunnel error; the argument is an exit status",
+      "localizations": {
+        "ca": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ssh ha acabat (codi %lld)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ssh ha terminado (código %lld)"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

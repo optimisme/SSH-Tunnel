@@ -17,15 +17,13 @@ nonisolated enum Tools {
 
 /// Value snapshot of everything needed to inspect a tunnel from a background thread.
 nonisolated struct TunnelSpec: Sendable {
-    let user: String
-    let host: String
+    /// `user@host`, or a bare host / ~/.ssh/config alias.
+    let target: String
     let sshPort: String
     let localPorts: [UInt16]
     /// `local:remoteHost:remotePort` strings, exactly as passed to `ssh -L`.
     let forwards: [String]
     let controlSocketPath: String
-
-    var target: String { "\(user)@\(host)" }
 }
 
 nonisolated enum DetectedState: Sendable, Equatable {
@@ -190,8 +188,9 @@ nonisolated enum SMB {
 
             let ok = ProcessRunner.runBlocking(Tools.umount, [mountPoint.path], timeout: 10).exitCode == 0
                 || ProcessRunner.runBlocking(Tools.diskutil, ["unmount", "force", mountPoint.path], timeout: 15).exitCode == 0
-            log.append(ok ? "[info] Unmounted SMB volume: \(mountPoint.path)"
-                          : "[error] Could not unmount SMB volume: \(mountPoint.path)")
+            log.append(ok
+                ? "[info] " + String(localized: "Unmounted SMB volume \(mountPoint.path)", comment: "Log line")
+                : "[error] " + String(localized: "Could not unmount SMB volume \(mountPoint.path)", comment: "Log line"))
         }
         return log
     }

@@ -66,15 +66,15 @@ final class SSHConfiguration: ObservableObject, Identifiable {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.id = try decodedUUID(from: container, forKey: .id)
-            self.name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Connexió"
+            self.name = try container.decodeIfPresent(String.self, forKey: .name) ?? String(localized: "Connection", comment: "Fallback configuration name")
             self.connection = try container.decodeIfPresent(SSHConnectionController.Snapshot.self, forKey: .connection)
                 ?? SSHConnectionController.Snapshot(
                     host: "",
                     user: "",
                     sshPort: "",
-                    keyPath: "",
+                    keyPath: SSHConnectionController.defaultKeyPath,
                     forwardRules: [
-                        PortForwardRule(name: "Regla 1", localPort: "5901", remoteHost: "localhost", remotePort: "5900")
+                        PortForwardRule(name: SSHConnectionController.ruleName(1), localPort: "5901", remoteHost: "localhost", remotePort: "5900")
                     ],
                     autoReconnect: false
                 )
@@ -110,11 +110,19 @@ final class SSHConfigStore: ObservableObject {
     private var needsUnreadableBackup = false
     private var lastSavedData: Data?
 
-    init() {
+    nonisolated static var defaultSaveURL: URL {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = support.appendingPathComponent("SSH-TunelApp", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        saveURL = dir.appendingPathComponent("configs.json")
+        return support
+            .appendingPathComponent("SSH-TunelApp", isDirectory: true)
+            .appendingPathComponent("configs.json")
+    }
+
+    /// - Parameters:
+    ///   - saveURL: where configurations are stored (tests pass a temporary file).
+    ///   - observeSystem: follow sleep/wake/quit notifications and probe tunnels on launch.
+    init(saveURL: URL = SSHConfigStore.defaultSaveURL, observeSystem: Bool = true) {
+        try? FileManager.default.createDirectory(at: saveURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        self.saveURL = saveURL
 
         switch Self.loadConfigs(from: saveURL) {
         case .loaded(let loaded, let data):
@@ -141,6 +149,8 @@ final class SSHConfigStore: ObservableObject {
             }
             .store(in: &cancellables)
 
+        guard observeSystem else { return }
+
         let ws = NSWorkspace.shared.notificationCenter
         ws.publisher(for: NSWorkspace.willSleepNotification)
             .sink { [weak self] _ in self?.configurations.forEach { $0.connection.systemWillSleep() } }
@@ -150,7 +160,7 @@ final class SSHConfigStore: ObservableObject {
             .store(in: &cancellables)
 
         NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
-            .sink { [weak self] _ in self?.save() }
+            .sink { [weak self] _ in self?.saveNow() }
             .store(in: &cancellables)
 
         // Show the real state of every tunnel (they survive app restarts via ControlPersist).
@@ -162,16 +172,24 @@ final class SSHConfigStore: ObservableObject {
         return configurations.first { $0.id == id }
     }
 
+    var runningConfigurations: [SSHConfiguration] {
+        configurations.filter { $0.connection.isRunning }
+    }
+
+    static func defaultName(_ index: Int) -> String {
+        String(localized: "Connection \(index)", comment: "Default name of a new SSH configuration")
+    }
+
     func addConfiguration() {
         let names = Set(configurations.map(\.name))
         var idx = configurations.count + 1
-        while names.contains("Connexió \(idx)") { idx += 1 }
+        while names.contains(Self.defaultName(idx)) { idx += 1 }
 
         let usedPorts = Set(configurations.flatMap { $0.connection.forwardRules.compactMap { Int($0.localPort) } })
         var port = 5901
         while usedPorts.contains(port) { port += 1 }
 
-        let cfg = SSHConfiguration(name: "Connexió \(idx)", defaultLocalPort: "\(port)")
+        let cfg = SSHConfiguration(name: Self.defaultName(idx), defaultLocalPort: "\(port)")
         configurations.append(cfg)
         selectedID = cfg.id
     }
@@ -180,13 +198,29 @@ final class SSHConfigStore: ObservableObject {
         configurations.move(fromOffsets: source, toOffset: destination)
     }
 
-    func removeSelected() {
-        guard let id = selectedID,
-              let idx = configurations.firstIndex(where: { $0.id == id }) else { return }
+    func remove(id: UUID) {
+        guard let idx = configurations.firstIndex(where: { $0.id == id }) else { return }
 
         configurations[idx].connection.stop()
         configurations.remove(at: idx)
-        selectedID = configurations.isEmpty ? nil : configurations[min(idx, configurations.count - 1)].id
+        if selectedID == id || selectedID == nil {
+            selectedID = configurations.isEmpty ? nil : configurations[min(idx, configurations.count - 1)].id
+        }
+    }
+
+    /// Stops every running tunnel and waits for them (used on quit).
+    func stopAll() async {
+        await withTaskGroup(of: Void.self) { group in
+            for cfg in runningConfigurations {
+                group.addTask { await cfg.connection.stopAndWait() }
+            }
+        }
+    }
+
+    /// Writes pending changes now (normally saves are debounced).
+    func saveNow() {
+        saveWorkItem?.cancel()
+        save()
     }
 
     private func attachObservers() {

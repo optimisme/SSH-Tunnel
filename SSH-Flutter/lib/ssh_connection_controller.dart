@@ -5,26 +5,94 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 
+import 'l10n.dart';
 import 'process_runner.dart';
 import 'ssh_config_store.dart';
 
 enum TunnelPhaseKind { stopped, connecting, retrying, active, stopping, error }
 
 class TunnelPhase {
-  const TunnelPhase._(this.kind, [this.message = '', this.seconds = 0]);
+  const TunnelPhase._(this.kind, [this.issue, this.seconds = 0]);
 
   const TunnelPhase.stopped() : this._(TunnelPhaseKind.stopped);
   const TunnelPhase.connecting() : this._(TunnelPhaseKind.connecting);
   const TunnelPhase.retrying(int seconds)
-    : this._(TunnelPhaseKind.retrying, '', seconds);
+    : this._(TunnelPhaseKind.retrying, null, seconds);
   const TunnelPhase.active() : this._(TunnelPhaseKind.active);
   const TunnelPhase.stopping() : this._(TunnelPhaseKind.stopping);
-  const TunnelPhase.error(String message)
-    : this._(TunnelPhaseKind.error, message);
+  const TunnelPhase.error(TunnelIssue issue)
+    : this._(TunnelPhaseKind.error, issue);
 
   final TunnelPhaseKind kind;
-  final String message;
+  final TunnelIssue? issue;
   final int seconds;
+}
+
+enum TunnelIssueKind {
+  missingHost,
+  invalidSshPort,
+  noRules,
+  invalidPorts,
+  missingRemoteHost,
+  duplicateLocalPort,
+  hostKeyChanged,
+  localPortInUse,
+  authentication,
+  sshConfiguration,
+  sshExited,
+  connectionLost,
+  cannotRunSsh,
+}
+
+/// Why a tunnel is in the error state. Typed so the text is localized in one place.
+class TunnelIssue {
+  const TunnelIssue(this.kind, [this.argument = '']);
+
+  final TunnelIssueKind kind;
+
+  /// Rule name, port(s) or exit code, depending on [kind].
+  final String argument;
+
+  String get message {
+    switch (kind) {
+      case TunnelIssueKind.missingHost:
+        return l10n.issueMissingHost;
+      case TunnelIssueKind.invalidSshPort:
+        return l10n.issueInvalidSshPort;
+      case TunnelIssueKind.noRules:
+        return l10n.issueNoRules;
+      case TunnelIssueKind.invalidPorts:
+        return l10n.issueInvalidPorts(argument);
+      case TunnelIssueKind.missingRemoteHost:
+        return l10n.issueMissingRemoteHost(argument);
+      case TunnelIssueKind.duplicateLocalPort:
+        return l10n.issueDuplicateLocalPort(argument);
+      case TunnelIssueKind.hostKeyChanged:
+        return l10n.issueHostKeyChanged;
+      case TunnelIssueKind.localPortInUse:
+        return l10n.issueLocalPortInUse(argument);
+      case TunnelIssueKind.authentication:
+        return l10n.issueAuthentication;
+      case TunnelIssueKind.sshConfiguration:
+        return l10n.issueSshConfiguration;
+      case TunnelIssueKind.sshExited:
+        return l10n.issueSshExited(argument);
+      case TunnelIssueKind.connectionLost:
+        return l10n.issueConnectionLost;
+      case TunnelIssueKind.cannotRunSsh:
+        return l10n.issueCannotRunSsh;
+    }
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is TunnelIssue && other.kind == kind && other.argument == argument;
+
+  @override
+  int get hashCode => Object.hash(kind, argument);
+
+  @override
+  String toString() => 'TunnelIssue($kind, $argument)';
 }
 
 enum DetectedStateType {
@@ -53,19 +121,33 @@ class DetectedState {
       type == DetectedStateType.activeMatchesConfigByPid;
 }
 
-enum FailureKind { hostKeyChanged, addressInUse, authOrKey, config, transient, other }
+enum FailureKind {
+  hostKeyChanged,
+  addressInUse,
+  authOrKey,
+  config,
+  transient,
+  other,
+}
 
 class SSHConnectionController extends ChangeNotifier {
   SSHConnectionController({required String defaultLocalPort})
-    : forwardRules = [
-        PortForwardRule.createDefault('Regla 1', defaultLocalPort),
+    : keyPath = _normalizeKeyPath(defaultKeyPath),
+      forwardRules = [
+        PortForwardRule.createDefault(ruleName(1), defaultLocalPort),
       ];
+
+  static const String defaultKeyPath = '~/.ssh/id_rsa';
+
+  static String ruleName(int index) => l10n.defaultRuleName(index);
 
   SSHConnectionController.fromSnapshot(Map<String, dynamic> snapshot)
     : host = (snapshot['host'] as String?) ?? '',
       user = (snapshot['user'] as String?) ?? '',
       sshPort = (snapshot['sshPort'] as String?) ?? '',
-      keyPath = _normalizeKeyPath((snapshot['keyPath'] as String?) ?? ''),
+      keyPath = _normalizeKeyPath(
+        (snapshot['keyPath'] as String?) ?? defaultKeyPath,
+      ),
       autoReconnect = (snapshot['autoReconnect'] as bool?) ?? false,
       forwardRules = _parseRules(snapshot['forwardRules']);
 
@@ -82,6 +164,8 @@ class SSHConnectionController extends ChangeNotifier {
   String logText = '';
 
   static const int _maxLogCharacters = 40000;
+
+  static String get sshPath => _sshPath;
 
   static final String _sshPath = platformCommand(
     'ssh',
@@ -159,16 +243,16 @@ class SSHConnectionController extends ChangeNotifier {
   String get statusLabel {
     switch (_phase.kind) {
       case TunnelPhaseKind.active:
-        return 'Actiu';
+        return l10n.statusActive;
       case TunnelPhaseKind.connecting:
       case TunnelPhaseKind.retrying:
-        return 'Connectant';
+        return l10n.statusConnecting;
       case TunnelPhaseKind.stopping:
-        return 'Aturant';
+        return l10n.statusStopping;
       case TunnelPhaseKind.stopped:
-        return 'Aturat';
+        return l10n.statusStopped;
       case TunnelPhaseKind.error:
-        return 'Error';
+        return l10n.statusError;
     }
   }
 
@@ -177,15 +261,15 @@ class SSHConnectionController extends ChangeNotifier {
       case TunnelPhaseKind.active:
         return 'localhost:${_localPortsSummary()}';
       case TunnelPhaseKind.connecting:
-        return 'Connectant…';
+        return l10n.detailConnecting;
       case TunnelPhaseKind.retrying:
-        return 'Reintentant en ${_phase.seconds}s…';
+        return l10n.detailRetrying(_phase.seconds);
       case TunnelPhaseKind.stopping:
-        return 'Aturant…';
+        return l10n.detailStopping;
       case TunnelPhaseKind.stopped:
         return '';
       case TunnelPhaseKind.error:
-        return _phase.message;
+        return _phase.issue?.message ?? '';
     }
   }
 
@@ -287,6 +371,16 @@ class SSHConnectionController extends ChangeNotifier {
     _notify();
   }
 
+  /// Moves the rule at [from] so it ends up at index [to] (clamped).
+  void moveForwardRule(int from, int to) {
+    if (isRunning || from < 0 || from >= forwardRules.length) return;
+    final target = to.clamp(0, forwardRules.length - 1);
+    if (target == from) return;
+    final rule = forwardRules.removeAt(from);
+    forwardRules.insert(target, rule);
+    _notify();
+  }
+
   // MARK: - User actions
 
   void start({bool clearLog = true}) {
@@ -299,6 +393,12 @@ class SSHConnectionController extends ChangeNotifier {
   }
 
   Future<void> stop() => _performStop();
+
+  /// Stops the tunnel and returns once ssh has been told to exit (used on quit).
+  Future<void> stopAndWait() async {
+    if (!isRunning) return;
+    await _performStop();
+  }
 
   /// Re-inspects the system (on launch, or to adopt a tunnel started outside the app).
   Future<void> refresh() async {
@@ -338,7 +438,7 @@ class SSHConnectionController extends ChangeNotifier {
     if (autoReconnect) {
       // The TCP connection almost certainly died during sleep, but the ssh
       // master may not notice for ~30s. Restart it right away instead.
-      _appendLog('[info] Wake from sleep: restarting tunnel');
+      _appendLog('[info] ${l10n.logWokeFromSleep}');
       unawaited(() async {
         await _performStop();
         await Future<void>.delayed(const Duration(seconds: 2));
@@ -356,14 +456,14 @@ class SSHConnectionController extends ChangeNotifier {
 
   bool get _supportsControlMaster => !Platform.isWindows;
 
-  bool get _hasTarget => host.trim().isNotEmpty && user.trim().isNotEmpty;
+  bool get _hasTarget => host.trim().isNotEmpty;
 
   Future<void> _connect() async {
     if (_process != null) return;
 
-    final problem = _validationError();
+    final problem = validationError();
     if (problem != null) {
-      _appendLog('[error] $problem');
+      _appendLog('[error] ${problem.message}');
       _setPhase(TunnelPhase.error(problem));
       return;
     }
@@ -381,7 +481,7 @@ class SSHConnectionController extends ChangeNotifier {
       await _launchSsh(gen);
     } else {
       if (state.type == DetectedStateType.portUsedByOther) {
-        _appendLog('[error] Local port in use by another process.');
+        _appendLog('[error] ${l10n.logPortUsedByOther}');
       }
       _apply(state);
     }
@@ -415,9 +515,12 @@ class SSHConnectionController extends ChangeNotifier {
 
     if (_supportsControlMaster) {
       args.addAll([
-        '-o', 'ControlMaster=yes',
-        '-o', 'ControlPersist=yes',
-        '-o', 'ControlPath=$_controlSocketPath',
+        '-o',
+        'ControlMaster=yes',
+        '-o',
+        'ControlPersist=yes',
+        '-o',
+        'ControlPath=$_controlSocketPath',
       ]);
     }
 
@@ -428,8 +531,10 @@ class SSHConnectionController extends ChangeNotifier {
     try {
       p = await Process.start(_sshPath, args);
     } catch (e) {
-      _appendLog('[error] Cannot execute ssh: $e');
-      _setPhase(const TunnelPhase.error('no puc executar ssh'));
+      _appendLog('[error] ${l10n.logCannotRunSsh('$e')}');
+      _setPhase(
+        const TunnelPhase.error(TunnelIssue(TunnelIssueKind.cannotRunSsh)),
+      );
       return;
     }
 
@@ -455,10 +560,9 @@ class SSHConnectionController extends ChangeNotifier {
     unawaited(
       p.exitCode.then((code) async {
         // Let in-flight log chunks land before classifying the failure.
-        await Future.wait([outDone, errDone]).timeout(
-          const Duration(milliseconds: 500),
-          onTimeout: () => const [],
-        );
+        await Future.wait(
+          [outDone, errDone],
+        ).timeout(const Duration(milliseconds: 500), onTimeout: () => const []);
         await _handleTermination(p, code, gen);
       }),
     );
@@ -478,25 +582,33 @@ class SSHConnectionController extends ChangeNotifier {
     }
 
     _stopTimer();
-    switch (_classifyFailure(_attemptLog.toString())) {
+    switch (classifyFailure(_attemptLog.toString())) {
       case FailureKind.hostKeyChanged:
         _setPhase(
-          const TunnelPhase.error(
-            'la clau del host ha canviat (revisa ~/.ssh/known_hosts)',
-          ),
+          const TunnelPhase.error(TunnelIssue(TunnelIssueKind.hostKeyChanged)),
         );
       case FailureKind.addressInUse:
-        _setPhase(TunnelPhase.error('port local ocupat (${_localPortsSummary()})'));
+        _setPhase(_portInUseError());
       case FailureKind.authOrKey:
-        _setPhase(const TunnelPhase.error('autenticació/clau'));
+        _setPhase(
+          const TunnelPhase.error(TunnelIssue(TunnelIssueKind.authentication)),
+        );
       case FailureKind.config:
-        _setPhase(const TunnelPhase.error('configuració ssh'));
+        _setPhase(
+          const TunnelPhase.error(
+            TunnelIssue(TunnelIssueKind.sshConfiguration),
+          ),
+        );
       case FailureKind.transient:
       case FailureKind.other:
         if (autoReconnect) {
           _scheduleReconnect();
         } else {
-          _setPhase(TunnelPhase.error('ssh ha sortit (codi $exitCode)'));
+          _setPhase(
+            TunnelPhase.error(
+              TunnelIssue(TunnelIssueKind.sshExited, '$exitCode'),
+            ),
+          );
         }
     }
   }
@@ -517,7 +629,7 @@ class SSHConnectionController extends ChangeNotifier {
     final exited = _hasTarget && await _sshControlExit();
     if (!exited && pid != null) {
       if (!await _killPid(pid)) {
-        _appendLog('[error] Could not stop ssh process $pid');
+        _appendLog('[error] ${l10n.logCouldNotStopProcess('$pid')}');
       }
     }
     proc?.kill(ProcessSignal.sigterm);
@@ -552,22 +664,27 @@ class SSHConnectionController extends ChangeNotifier {
       case DetectedStateType.portUsedByOther:
         _externalMatchingPid = null;
         _stopTimer();
-        _setPhase(TunnelPhase.error('port local ocupat (${_localPortsSummary()})'));
+        _setPhase(_portInUseError());
       case DetectedStateType.stopped:
         _externalMatchingPid = null;
         _stopTimer();
         if (_phase.kind == TunnelPhaseKind.active) {
-          _appendLog('[info] Connection lost');
+          const lost = TunnelIssue(TunnelIssueKind.connectionLost);
+          _appendLog('[info] ${lost.message}');
           if (autoReconnect) {
             _scheduleReconnect();
           } else {
-            _setPhase(const TunnelPhase.error('connexió perduda'));
+            _setPhase(const TunnelPhase.error(lost));
           }
         } else {
           _setPhase(const TunnelPhase.stopped());
         }
     }
   }
+
+  TunnelPhase _portInUseError() => TunnelPhase.error(
+    TunnelIssue(TunnelIssueKind.localPortInUse, _localPortsSummary()),
+  );
 
   void _becameActive() {
     _failures = 0;
@@ -601,7 +718,8 @@ class SSHConnectionController extends ChangeNotifier {
   Future<void> _tick() async {
     final kind = _phase.kind;
     if (_isProbing ||
-        (kind != TunnelPhaseKind.active && kind != TunnelPhaseKind.connecting)) {
+        (kind != TunnelPhaseKind.active &&
+            kind != TunnelPhaseKind.connecting)) {
       return;
     }
     final gen = _generation;
@@ -649,7 +767,14 @@ class SSHConnectionController extends ChangeNotifier {
       }
 
       final cmd = await _commandLine(pid);
-      return _matchesOurTunnelCommandLine(cmd)
+      final matches = matchesCommandLine(
+        cmd,
+        target: _sshTarget,
+        sshPort: sshPort.trim(),
+        forwards: _forwardSpecs,
+        windows: Platform.isWindows,
+      );
+      return matches
           ? DetectedState.activeMatchesConfigByPid(pid)
           : const DetectedState.portUsedByOther();
     }
@@ -660,9 +785,12 @@ class SSHConnectionController extends ChangeNotifier {
   Future<bool> _isOurTunnelActive() async {
     if (!_supportsControlMaster) return false;
     final res = await runCommand(_sshPath, [
-      '-o', 'BatchMode=yes',
-      '-S', _controlSocketPath,
-      '-O', 'check',
+      '-o',
+      'BatchMode=yes',
+      '-S',
+      _controlSocketPath,
+      '-O',
+      'check',
       _sshTarget,
     ]);
     return res.exitCode == 0;
@@ -671,9 +799,12 @@ class SSHConnectionController extends ChangeNotifier {
   Future<bool> _sshControlExit() async {
     if (!_supportsControlMaster) return false;
     final res = await runCommand(_sshPath, [
-      '-o', 'BatchMode=yes',
-      '-S', _controlSocketPath,
-      '-O', 'exit',
+      '-o',
+      'BatchMode=yes',
+      '-S',
+      _controlSocketPath,
+      '-O',
+      'exit',
       _sshTarget,
     ]);
     return res.exitCode == 0;
@@ -685,7 +816,9 @@ class SSHConnectionController extends ChangeNotifier {
     // -b: avoid kernel calls that can block (stat on dead network mounts).
     // -w: suppress the warnings -b produces.
     final res = await runCommand(_lsofPath, [
-      '-nP', '-b', '-w',
+      '-nP',
+      '-b',
+      '-w',
       '-iTCP:$port',
       '-sTCP:LISTEN',
       '-Fp',
@@ -734,8 +867,10 @@ class SSHConnectionController extends ChangeNotifier {
       }
 
       final fromTasklist = await runCommand(_tasklistPath, [
-        '/FI', 'PID eq $pid',
-        '/FO', 'CSV',
+        '/FI',
+        'PID eq $pid',
+        '/FO',
+        'CSV',
         '/NH',
       ]);
       if (fromTasklist.exitCode == 0) {
@@ -748,29 +883,33 @@ class SSHConnectionController extends ChangeNotifier {
       return '';
     }
 
-    final res = await runCommand(
-      _psPath,
-      ['-p', '$pid', '-o', 'command='],
-      timeout: const Duration(seconds: 3),
-    );
+    final res = await runCommand(_psPath, [
+      '-p',
+      '$pid',
+      '-o',
+      'command=',
+    ], timeout: const Duration(seconds: 3));
     return res.stdout.trim();
   }
 
   /// Token-based match so that e.g. `-p 22` does not match `-p 2222`.
-  bool _matchesOurTunnelCommandLine(String cmd) {
-    final lower = cmd.toLowerCase();
-    if (Platform.isWindows) {
-      if (!lower.contains('ssh.exe') && !lower.contains('\\ssh')) return false;
-    } else if (!lower.contains('ssh')) {
-      return false;
-    }
-
+  @visibleForTesting
+  static bool matchesCommandLine(
+    String cmd, {
+    required String target,
+    required String sshPort,
+    required List<String> forwards,
+    bool windows = false,
+  }) {
     final tokens = cmd
         .split(RegExp(r'\s+'))
         .map((t) => t.replaceAll('"', ''))
         .where((t) => t.isNotEmpty)
         .toList();
-    if (!tokens.contains(_sshTarget)) return false;
+    if (tokens.isEmpty) return false;
+    final exe = tokens.first.toLowerCase().split(RegExp(r'[/\\]')).last;
+    if (exe != 'ssh' && exe != 'ssh.exe') return false;
+    if (!tokens.contains(target)) return false;
 
     bool hasPair(String flag, String value) {
       if (tokens.contains('$flag$value')) return true;
@@ -780,11 +919,11 @@ class SSHConnectionController extends ChangeNotifier {
       return false;
     }
 
-    final port = sshPort.trim().isEmpty ? '22' : sshPort.trim();
+    final port = sshPort.isEmpty ? '22' : sshPort;
     if (port != '22' || tokens.contains('-p')) {
       if (!hasPair('-p', port)) return false;
     }
-    for (final fwd in _forwardSpecs) {
+    for (final fwd in forwards) {
       if (!hasPair('-L', fwd)) return false;
     }
     return true;
@@ -831,21 +970,28 @@ class SSHConnectionController extends ChangeNotifier {
 
   // MARK: - Helpers
 
-  String? _validationError() {
-    if (host.trim().isEmpty) return "cal indicar el host";
-    if (user.trim().isEmpty) return "cal indicar l'usuari";
+  TunnelIssue? validationError() {
+    if (host.trim().isEmpty) {
+      return const TunnelIssue(TunnelIssueKind.missingHost);
+    }
     final port = sshPort.trim();
-    if (port.isNotEmpty && !_isValidPort(port)) return 'port SSH invàlid';
-    if (forwardRules.isEmpty) return 'cap regla de port definida';
+    if (port.isNotEmpty && !_isValidPort(port)) {
+      return const TunnelIssue(TunnelIssueKind.invalidSshPort);
+    }
+    if (forwardRules.isEmpty) return const TunnelIssue(TunnelIssueKind.noRules);
     final seen = <int>{};
     for (final r in forwardRules) {
       if (!_isValidPort(r.localPort.trim()) ||
           !_isValidPort(r.remotePort.trim())) {
-        return 'ports invàlids a ${r.name}';
+        return TunnelIssue(TunnelIssueKind.invalidPorts, r.name);
       }
-      if (r.remoteHost.trim().isEmpty) return 'falta el host remot a ${r.name}';
+      if (r.remoteHost.trim().isEmpty) {
+        return TunnelIssue(TunnelIssueKind.missingRemoteHost, r.name);
+      }
       final lp = int.parse(r.localPort.trim());
-      if (!seen.add(lp)) return 'port local $lp repetit';
+      if (!seen.add(lp)) {
+        return TunnelIssue(TunnelIssueKind.duplicateLocalPort, '$lp');
+      }
     }
     return null;
   }
@@ -882,8 +1028,7 @@ class SSHConnectionController extends ChangeNotifier {
     _notify();
   }
 
-  String _localPortsSummary() =>
-      forwardRules.map((r) => r.localPort).join(',');
+  String _localPortsSummary() => forwardRules.map((r) => r.localPort).join(',');
 
   List<String> get _forwardSpecs => forwardRules
       .map(
@@ -907,16 +1052,20 @@ class SSHConnectionController extends ChangeNotifier {
   String _suggestedRuleName() {
     final used = forwardRules.map((r) => r.name.trim()).toSet();
     var idx = 1;
-    while (used.contains('Regla $idx')) {
+    while (used.contains(ruleName(idx))) {
       idx += 1;
     }
-    return 'Regla $idx';
+    return ruleName(idx);
   }
 
-  String get _sshTarget => '${user.trim()}@${host.trim()}';
+  /// `user@host`, or just `host` so ssh takes the user from ~/.ssh/config.
+  String get _sshTarget =>
+      user.trim().isEmpty ? host.trim() : '${user.trim()}@${host.trim()}';
 
   /// NOTE: keep this format stable so tunnels started by previous versions
   /// (and by the native macOS app) are still recognised.
+  String get controlSocketPath => _controlSocketPath;
+
   String get _controlSocketPath {
     final rulesKey =
         forwardRules
@@ -925,7 +1074,7 @@ class SSHConnectionController extends ChangeNotifier {
           ..sort();
 
     final base = '$user@$host:$sshPort|${rulesKey.join('|')}';
-    return _socketPathForDigest(_stableShortHash(base));
+    return _socketPathForDigest(stableShortHash(base));
   }
 
   String _socketPathForDigest(String digest) {
@@ -950,7 +1099,7 @@ class SSHConnectionController extends ChangeNotifier {
     return '$base${Platform.pathSeparator}$leaf';
   }
 
-  String _stableShortHash(String input) {
+  static String stableShortHash(String input) {
     var hash = BigInt.parse('14695981039346656037');
     final prime = BigInt.from(1099511628211);
     final mask = (BigInt.one << 64) - BigInt.one;
@@ -960,7 +1109,7 @@ class SSHConnectionController extends ChangeNotifier {
     return hash.toRadixString(16).padLeft(16, '0');
   }
 
-  FailureKind _classifyFailure(String text) {
+  static FailureKind classifyFailure(String text) {
     final s = text.toLowerCase();
 
     if (s.contains('host key verification failed') ||
@@ -1019,7 +1168,7 @@ class SSHConnectionController extends ChangeNotifier {
       }
     }
     if (parsed.isEmpty) {
-      return [PortForwardRule.createDefault('Regla 1', '5901')];
+      return [PortForwardRule.createDefault(ruleName(1), '5901')];
     }
     return parsed;
   }

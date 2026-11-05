@@ -1,22 +1,31 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:ui' show AppExitResponse, PlatformDispatcher;
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter_cupertino_desktop_kit/flutter_cupertino_desktop_kit.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'l10n.dart';
+import 'ssh_config_file.dart';
 import 'ssh_config_store.dart';
 import 'ssh_connection_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  updateL10n();
 
   await windowManager.ensureInitialized();
+  // The close button asks about open tunnels first (see onWindowClose).
+  await windowManager.setPreventClose(true);
   windowManager.waitUntilReadyToShow(
-    const WindowOptions(
-      size: Size(850, 775),
-      minimumSize: Size(800, 600),
-      title: 'SSH Túnel',
+    WindowOptions(
+      size: const Size(850, 775),
+      minimumSize: const Size(800, 600),
+      title: l10n.appTitle,
       center: true,
     ),
     () async {
@@ -40,7 +49,54 @@ class SSHFlutterApp extends StatelessWidget {
     return CDKApp(
       defaultAppearance: CDKThemeAppearance.system,
       defaultColor: 'systemBlue',
-      child: SSHHomePage(store: store),
+      child: LocalizedRoot(child: SSHHomePage(store: store)),
+    );
+  }
+}
+
+/// CDKApp has no localization hooks: inject the app's delegates here and
+/// follow changes to the system languages.
+class LocalizedRoot extends StatefulWidget {
+  const LocalizedRoot({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<LocalizedRoot> createState() => _LocalizedRootState();
+}
+
+class _LocalizedRootState extends State<LocalizedRoot>
+    with WidgetsBindingObserver {
+  late Locale _locale = resolveAppLocale(PlatformDispatcher.instance.locales);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    setState(() => _locale = updateL10n(locales));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Localizations.override(
+      context: context,
+      locale: _locale,
+      delegates: const [
+        AppLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      child: widget.child,
     );
   }
 }
@@ -80,30 +136,110 @@ class SSHHomePage extends StatefulWidget {
   State<SSHHomePage> createState() => _SSHHomePageState();
 }
 
-class _SSHHomePageState extends State<SSHHomePage> {
+class _SSHHomePageState extends State<SSHHomePage> with WindowListener {
   double _sidebarWidth = 240;
   double? _sidebarDragStartWidth;
   double? _sidebarDragStartX;
+  final GlobalKey _settingsAnchor = GlobalKey();
+
+  late final AppLifecycleListener _lifecycle;
+  bool _exitApproved = false;
+  Future<bool>? _pendingQuit;
+
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+    _lifecycle = AppLifecycleListener(onExitRequested: _onExitRequested);
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  // MARK: Quitting
+
+  /// Cmd+Q / app menu Quit.
+  Future<AppExitResponse> _onExitRequested() async {
+    if (_exitApproved) return AppExitResponse.exit;
+    return await _prepareToQuit()
+        ? AppExitResponse.exit
+        : AppExitResponse.cancel;
+  }
+
+  /// Window close button (the app quits with its only window).
+  @override
+  void onWindowClose() {
+    unawaited(() async {
+      if (!await _prepareToQuit()) return;
+      _exitApproved = true;
+      await windowManager.destroy();
+    }());
+  }
+
+  /// Returns false when the user cancels. Never asks twice at the same time.
+  Future<bool> _prepareToQuit() {
+    return _pendingQuit ??= _runQuitFlow().whenComplete(() {
+      _pendingQuit = null;
+    });
+  }
+
+  Future<bool> _runQuitFlow() async {
+    final store = widget.store;
+    final running = store.runningConfigurations.length;
+    if (running > 0) {
+      var behavior = store.quitBehavior;
+      if (behavior == QuitBehavior.ask) {
+        await windowManager.show();
+        await windowManager.focus();
+        if (!mounted) return true;
+        final choice = await showQuitDialog(context, running);
+        if (choice == null) return false;
+        if (choice.dontAskAgain) store.quitBehavior = choice.behavior;
+        behavior = choice.behavior;
+      }
+      if (behavior == QuitBehavior.closeTunnels) await store.stopAll();
+    }
+    await store.saveNow();
+    _exitApproved = true;
+    return true;
+  }
+
+  // MARK: Actions
 
   Future<void> _confirmRemove(
     BuildContext context,
     SSHConfiguration selected,
   ) async {
+    final t = tr(context);
     final ok = await CDKDialogsManager.showConfirm(
       context: context,
-      title: 'Eliminar «${selected.name}»?',
-      message: "Si el túnel està actiu, s'aturarà.",
-      confirmLabel: 'Eliminar',
-      cancelLabel: 'Cancel·lar',
+      title: t.deleteConfirmTitle(selected.name),
+      message: t.deleteConfirmMessage,
+      confirmLabel: t.delete,
+      cancelLabel: t.cancel,
       isDestructive: true,
     );
-    if (ok == true && widget.store.selectedId == selected.id) {
-      widget.store.removeSelected();
-    }
+    if (ok == true) widget.store.remove(selected.id);
+  }
+
+  void _showSettings(BuildContext context) {
+    final controller = CDKDialogController();
+    CDKDialogsManager.showPopover(
+      context: context,
+      anchorKey: _settingsAnchor,
+      type: CDKDialogPopoverType.down,
+      controller: controller,
+      child: SettingsPanel(store: widget.store),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = tr(context);
     return AnimatedBuilder(
       animation: widget.store,
       builder: (context, _) {
@@ -132,7 +268,7 @@ class _SSHHomePageState extends State<SSHHomePage> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Configuracions SSH',
+                              t.sidebarTitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: AppTextStyles.sidebarTitle,
@@ -184,19 +320,9 @@ class _SSHHomePageState extends State<SSHHomePage> {
                                     ),
                                     ReorderableDragStartListener(
                                       index: index,
-                                      child: MouseRegion(
-                                        cursor: SystemMouseCursors.grab,
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                            left: 4,
-                                          ),
-                                          child: Icon(
-                                            CupertinoIcons.line_horizontal_3,
-                                            size: 14,
-                                            color: sidebarTextColor.withValues(
-                                              alpha: 0.6,
-                                            ),
-                                          ),
+                                      child: DragHandle(
+                                        color: sidebarTextColor.withValues(
+                                          alpha: 0.6,
                                         ),
                                       ),
                                     ),
@@ -212,15 +338,23 @@ class _SSHHomePageState extends State<SSHHomePage> {
                         children: [
                           CDKButton(
                             onPressed: widget.store.addConfiguration,
-                            child: const Text('+ Afegir'),
+                            child: Text('+ ${t.add}'),
                           ),
                           const Spacer(),
+                          CDKButtonIcon(
+                            key: _settingsAnchor,
+                            onPressed: () => _showSettings(context),
+                            icon: CupertinoIcons.gear,
+                            semanticLabel: t.settings,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 4),
                           CDKButtonIcon(
                             onPressed: selected == null
                                 ? null
                                 : () => _confirmRemove(context, selected),
                             icon: CupertinoIcons.delete,
-                            semanticLabel: 'Eliminar',
+                            semanticLabel: t.deleteConfiguration,
                             size: 22,
                           ),
                         ],
@@ -228,6 +362,7 @@ class _SSHHomePageState extends State<SSHHomePage> {
                     ],
                   ),
                 ),
+                // No native split view in Flutter: a 1 px divider that can be dragged.
                 MouseRegion(
                   cursor: SystemMouseCursors.resizeColumn,
                   child: GestureDetector(
@@ -244,7 +379,7 @@ class _SSHHomePageState extends State<SSHHomePage> {
                       final proposed =
                           startWidth + (details.globalPosition.dx - startX);
                       setState(() {
-                        _sidebarWidth = proposed.clamp(160, 360).toDouble();
+                        _sidebarWidth = proposed.clamp(170, 340).toDouble();
                       });
                     },
                     onHorizontalDragEnd: (_) {
@@ -258,7 +393,7 @@ class _SSHHomePageState extends State<SSHHomePage> {
                   child: selected == null
                       ? Center(
                           child: Text(
-                            'Selecciona o crea una configuració',
+                            t.noSelection,
                             style: AppTextStyles.bodySmall.copyWith(
                               color: secondaryLabelColor,
                             ),
@@ -278,6 +413,174 @@ class _SSHHomePageState extends State<SSHHomePage> {
   }
 }
 
+class DragHandle extends StatelessWidget {
+  const DragHandle({super.key, required this.color, this.enabled = true});
+
+  final Color color;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: tr(context).dragToReorder,
+      child: MouseRegion(
+        cursor: enabled ? SystemMouseCursors.grab : MouseCursor.defer,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Icon(
+            CupertinoIcons.line_horizontal_3,
+            size: 14,
+            color: enabled ? color : color.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// MARK: - Quit dialog and settings
+
+class QuitChoice {
+  const QuitChoice(this.behavior, this.dontAskAgain);
+  final QuitBehavior behavior;
+  final bool dontAskAgain;
+}
+
+/// Asks what to do with [count] open tunnels. Null means "don't quit".
+Future<QuitChoice?> showQuitDialog(BuildContext context, int count) {
+  if (Overlay.maybeOf(context) == null) return Future.value(null);
+  final controller = CDKDialogController();
+  final completer = Completer<QuitChoice?>();
+  QuitChoice? result;
+  CDKDialogsManager.showModal(
+    context: context,
+    controller: controller,
+    showBackgroundShade: true,
+    onHide: () {
+      if (!completer.isCompleted) completer.complete(result);
+    },
+    child: QuitDialog(
+      count: count,
+      onChoice: (choice) {
+        result = choice;
+        controller.close();
+      },
+    ),
+  );
+  return completer.future;
+}
+
+class QuitDialog extends StatefulWidget {
+  const QuitDialog({super.key, required this.count, required this.onChoice});
+
+  final int count;
+  final ValueChanged<QuitChoice?> onChoice;
+
+  @override
+  State<QuitDialog> createState() => _QuitDialogState();
+}
+
+class _QuitDialogState extends State<QuitDialog> {
+  bool _dontAskAgain = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = tr(context);
+    void choose(QuitBehavior behavior) =>
+        widget.onChoice(QuitChoice(behavior, _dontAskAgain));
+    return SizedBox(
+      width: 420,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t.quitTitle(widget.count), style: AppTextStyles.sectionTitle),
+            const SizedBox(height: 8),
+            Text(t.quitMessage, style: AppTextStyles.bodySmall),
+            const SizedBox(height: 14),
+            GestureDetector(
+              onTap: () => setState(() => _dontAskAgain = !_dontAskAgain),
+              child: Row(
+                children: [
+                  CDKButtonCheckBox(
+                    value: _dontAskAgain,
+                    onChanged: (v) => setState(() => _dontAskAgain = v),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(t.dontAskAgain, style: AppTextStyles.bodySmall),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Wraps when long translations do not fit on one line.
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                CDKButton(
+                  onPressed: () => widget.onChoice(null),
+                  child: Text(t.cancel),
+                ),
+                CDKButton(
+                  onPressed: () => choose(QuitBehavior.keepTunnels),
+                  child: Text(t.keepRunning),
+                ),
+                CDKButton(
+                  style: CDKButtonStyle.action,
+                  onPressed: () => choose(QuitBehavior.closeTunnels),
+                  child: Text(t.closeTunnels),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SettingsPanel extends StatelessWidget {
+  const SettingsPanel({super.key, required this.store});
+
+  final SSHConfigStore store;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = tr(context);
+    final options = {
+      QuitBehavior.ask: t.quitAsk,
+      QuitBehavior.closeTunnels: t.quitClose,
+      QuitBehavior.keepTunnels: t.quitKeep,
+    };
+    return AnimatedBuilder(
+      animation: store,
+      builder: (context, _) => Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t.quitBehaviorLabel, style: AppTextStyles.bodySmall),
+            const SizedBox(height: 8),
+            for (final entry in options.entries)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: CDKButtonRadio(
+                  isSelected: store.quitBehavior == entry.key,
+                  onSelected: (_) => store.quitBehavior = entry.key,
+                  child: Text(entry.value, style: AppTextStyles.bodySmall),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ConnectionDetailView extends StatefulWidget {
   const ConnectionDetailView({super.key, required this.configuration});
 
@@ -290,18 +593,129 @@ class ConnectionDetailView extends StatefulWidget {
 class _ConnectionDetailViewState extends State<ConnectionDetailView> {
   SSHConnectionController get _connection => widget.configuration.connection;
 
+  final GlobalKey _hostMenuAnchor = GlobalKey();
+  final GlobalKey _keyMenuAnchor = GlobalKey();
+
+  List<String> _aliases = const [];
+  ResolvedSshHost? _resolved;
+  String _resolvedFor = '';
+  Timer? _resolveTimer;
+
   @override
   void initState() {
     super.initState();
     unawaited(_connection.refresh());
+    _aliases = SshConfigFile.hostAliases();
+    _connection.addListener(_hostMaybeChanged);
+    _hostMaybeChanged();
+  }
+
+  @override
+  void dispose() {
+    _resolveTimer?.cancel();
+    _connection.removeListener(_hostMaybeChanged);
+    super.dispose();
+  }
+
+  /// Looks the host up with `ssh -G` when it is a ~/.ssh/config alias.
+  void _hostMaybeChanged() {
+    final host = _connection.host.trim();
+    if (host == _resolvedFor) return;
+    _resolvedFor = host;
+    _resolveTimer?.cancel();
+    if (!_aliases.contains(host)) {
+      if (_resolved != null) setState(() => _resolved = null);
+      return;
+    }
+    _resolveTimer = Timer(const Duration(milliseconds: 300), () async {
+      final resolved = await SshConfigFile.resolve(
+        SSHConnectionController.sshPath,
+        host,
+      );
+      if (!mounted || _resolvedFor != host) return;
+      setState(() => _resolved = resolved);
+    });
+  }
+
+  String get _localUserName =>
+      Platform.environment['USER'] ?? Platform.environment['USERNAME'] ?? '';
+
+  void _showHostMenu(BuildContext context) {
+    final t = tr(context);
+    _aliases = SshConfigFile.hostAliases();
+    final controller = CDKDialogController();
+    CDKDialogsManager.showPopover(
+      context: context,
+      anchorKey: _hostMenuAnchor,
+      type: CDKDialogPopoverType.down,
+      controller: controller,
+      child: PickerMenu(
+        title: t.hostsFromSshConfig,
+        emptyText: t.noHostsInSshConfig,
+        entries: [
+          for (final alias in _aliases)
+            PickerEntry(alias, () {
+              controller.close();
+              _connection.setHost(alias);
+            }, selected: alias == _connection.host.trim()),
+        ],
+      ),
+    );
+  }
+
+  void _showKeyMenu(BuildContext context) {
+    final t = tr(context);
+    final keys = SshConfigFile.privateKeys();
+    final current = _connection.keyPath.trim();
+    final controller = CDKDialogController();
+    CDKDialogsManager.showPopover(
+      context: context,
+      anchorKey: _keyMenuAnchor,
+      type: CDKDialogPopoverType.down,
+      controller: controller,
+      child: PickerMenu(
+        entries: [
+          PickerEntry(t.useAgent, () {
+            controller.close();
+            _connection.setKeyPath('');
+          }, selected: current.isEmpty),
+          null,
+          for (final key in keys)
+            PickerEntry(key, () {
+              controller.close();
+              _connection.setKeyPath(key);
+            }, selected: key == current),
+          if (keys.isNotEmpty) null,
+          PickerEntry(t.chooseFile, () {
+            controller.close();
+            unawaited(_chooseKeyFile(t));
+          }),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _chooseKeyFile(AppLocalizations t) async {
+    final current = SshConfigFile.expandHome(_connection.keyPath.trim());
+    final dir = current.isNotEmpty && File(current).existsSync()
+        ? File(current).parent.path
+        : SshConfigFile.sshDirectory;
+    final file = await openFile(
+      initialDirectory: dir,
+      confirmButtonText: t.choose,
+    );
+    if (file == null) return;
+    _connection.setKeyPath(SshConfigFile.abbreviatingHome(file.path));
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = tr(context);
     final logPanelBorderColor = CupertinoColors.separator.resolveFrom(context);
     final logPanelBackgroundColor = CupertinoColors
         .tertiarySystemGroupedBackground
         .resolveFrom(context);
+    final secondaryLabel = CupertinoColors.secondaryLabel.resolveFrom(context);
     return AnimatedBuilder(
       animation: _connection,
       builder: (context, _) {
@@ -311,6 +725,13 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
           _connection.statusColor,
           context,
         );
+        final resolved = _resolved;
+        final userPrompt = resolved != null && resolved.user.isNotEmpty
+            ? t.userPlaceholderFromConfig(resolved.user)
+            : t.userPlaceholderDefault(_localUserName);
+        final portPrompt = resolved != null && resolved.port.isNotEmpty
+            ? resolved.port
+            : '22';
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -319,135 +740,121 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
               BoundTextField(
                 value: widget.configuration.name,
                 enabled: true,
-                label: 'Nom de la configuració',
+                label: t.configurationName,
                 labelStyle: AppTextStyles.sectionTitle,
                 onChanged: widget.configuration.setName,
               ),
               const SizedBox(height: 14),
               SectionCard(
-                title: 'Connexió SSH',
+                title: t.sshConnection,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _rowField(
-                      'Host',
+                      t.host,
                       _connection.host,
                       _connection.setHost,
                       enabled: !isRunning,
+                      placeholder: t.hostPlaceholder,
+                      trailing: CDKButtonIcon(
+                        key: _hostMenuAnchor,
+                        onPressed: isRunning
+                            ? null
+                            : () => _showHostMenu(context),
+                        icon: CupertinoIcons.list_bullet,
+                        semanticLabel: t.hostsFromSshConfig,
+                        size: 22,
+                      ),
                     ),
+                    if (resolved != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 72, top: 4),
+                        child: Text(
+                          t.fromSshConfig(resolved.summary),
+                          style: AppTextStyles.label.copyWith(
+                            color: secondaryLabel,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 8),
                     _rowField(
-                      'Usuari',
+                      t.user,
                       _connection.user,
                       _connection.setUser,
                       enabled: !isRunning,
+                      placeholder: userPrompt,
                     ),
                     const SizedBox(height: 8),
                     _rowField(
-                      'Port',
+                      t.port,
                       _connection.sshPort,
                       _connection.setSshPort,
                       enabled: !isRunning,
                       width: 100,
                       keyboardType: TextInputType.number,
-                      placeholder: '22',
+                      placeholder: portPrompt,
                     ),
                     const SizedBox(height: 8),
                     _rowField(
-                      'Clau',
+                      t.key,
                       _connection.keyPath,
                       _connection.setKeyPath,
                       enabled: !isRunning,
-                      placeholder: '~/.ssh/id_ed25519',
+                      placeholder: t.keyPlaceholder,
+                      trailing: CDKButtonIcon(
+                        key: _keyMenuAnchor,
+                        onPressed: isRunning
+                            ? null
+                            : () => _showKeyMenu(context),
+                        icon: CupertinoIcons.folder,
+                        semanticLabel: t.chooseKey,
+                        size: 22,
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
               SectionCard(
-                title: 'Regles de reenviament de port',
+                title: t.forwardRules,
                 child: Column(
                   children: [
-                    for (final rule in forwardRules)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 44,
-                              child: Text(
-                                'Nom',
-                                style: AppTextStyles.bodySmall,
-                              ),
-                            ),
-                            SizedBox(
-                              width: 140,
-                              child: BoundTextField(
-                                value: rule.name,
-                                enabled: !isRunning,
-                                onChanged: (v) =>
-                                    _connection.updateRuleName(rule.id, v),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 48,
-                              child: Text(
-                                'Local',
-                                style: AppTextStyles.bodySmall,
-                              ),
-                            ),
-                            SizedBox(
-                              width: 80,
-                              child: BoundTextField(
-                                value: rule.localPort,
-                                enabled: !isRunning,
-                                keyboardType: TextInputType.number,
-                                onChanged: (v) =>
-                                    _connection.updateRuleLocalPort(rule.id, v),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Text('→', style: AppTextStyles.bodySmall),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: BoundTextField(
-                                value: rule.remoteHost,
-                                enabled: !isRunning,
-                                onChanged: (v) => _connection
-                                    .updateRuleRemoteHost(rule.id, v),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 80,
-                              child: BoundTextField(
-                                value: rule.remotePort,
-                                enabled: !isRunning,
-                                keyboardType: TextInputType.number,
-                                onChanged: (v) => _connection
-                                    .updateRuleRemotePort(rule.id, v),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            CDKButtonIcon(
-                              onPressed: (isRunning || forwardRules.length == 1)
-                                  ? null
-                                  : () =>
-                                        _connection.removeForwardRule(rule.id),
-                              icon: CupertinoIcons.delete,
-                              semanticLabel: 'Eliminar regla',
-                              size: 22,
-                            ),
+                    ReorderableList(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: forwardRules.length,
+                      onReorder: (from, to) {
+                        if (to > from) to -= 1;
+                        _connection.moveForwardRule(from, to);
+                      },
+                      proxyDecorator: (child, index, animation) => Container(
+                        decoration: BoxDecoration(
+                          color: CupertinoColors
+                              .secondarySystemGroupedBackground
+                              .resolveFrom(context),
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: const [
+                            BoxShadow(blurRadius: 6, color: Color(0x33000000)),
                           ],
                         ),
+                        child: child,
                       ),
+                      itemBuilder: (context, index) => _ruleRow(
+                        context,
+                        t,
+                        forwardRules[index],
+                        index,
+                        isRunning: isRunning,
+                        canDelete: forwardRules.length > 1,
+                      ),
+                    ),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: CDKButton(
                         onPressed: isRunning
                             ? null
                             : _connection.addForwardRule,
-                        child: const Text('+ Afegir regla'),
+                        child: Text('+ ${t.addRule}'),
                       ),
                     ),
                   ],
@@ -458,7 +865,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                 children: [
                   Expanded(
                     child: Text(
-                      "Reconnectar automàticament si es perd la connexió (i en despertar l'ordinador)",
+                      t.autoReconnect,
                       style: AppTextStyles.bodySmall,
                     ),
                   ),
@@ -471,7 +878,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
               ),
               const SizedBox(height: 8),
               SectionCard(
-                title: 'Sortida (ssh)',
+                title: t.sshOutput,
                 child: Column(
                   children: [
                     Container(
@@ -498,7 +905,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                       alignment: Alignment.centerLeft,
                       child: CDKButton(
                         onPressed: _connection.clearLog,
-                        child: const Text('Netejar'),
+                        child: Text(t.clear),
                       ),
                     ),
                   ],
@@ -510,7 +917,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                   CDKButton(
                     onPressed: _connection.isRunning ? null : _connection.start,
                     style: CDKButtonStyle.action,
-                    child: const Text('Activar'),
+                    child: Text(t.connect),
                   ),
                   const SizedBox(width: 8),
                   CDKButton(
@@ -519,14 +926,14 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                             unawaited(_connection.stop());
                           }
                         : null,
-                    child: const Text('Desactivar'),
+                    child: Text(t.disconnect),
                   ),
                   const SizedBox(width: 8),
                   CDKButton(
                     onPressed: () {
                       unawaited(_connection.refresh());
                     },
-                    child: const Text('Refrescar'),
+                    child: Text(t.refresh),
                   ),
                   const Spacer(),
                   Row(
@@ -555,8 +962,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: CupertinoColors.secondaryLabel
-                                  .resolveFrom(context),
+                              color: secondaryLabel,
                             ),
                           ),
                         ),
@@ -572,6 +978,86 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
     );
   }
 
+  Widget _ruleRow(
+    BuildContext context,
+    AppLocalizations t,
+    PortForwardRule rule,
+    int index, {
+    required bool isRunning,
+    required bool canDelete,
+  }) {
+    final labelColor = CupertinoColors.label.resolveFrom(context);
+    final handle = DragHandle(color: labelColor, enabled: !isRunning);
+    return Padding(
+      key: ValueKey<String>(rule.id),
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          if (isRunning)
+            handle
+          else
+            ReorderableDragStartListener(index: index, child: handle),
+          const SizedBox(width: 4),
+          SizedBox(
+            width: 44,
+            child: Text(t.ruleName, style: AppTextStyles.bodySmall),
+          ),
+          SizedBox(
+            width: 130,
+            child: BoundTextField(
+              value: rule.name,
+              enabled: !isRunning,
+              onChanged: (v) => _connection.updateRuleName(rule.id, v),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 44,
+            child: Text(t.ruleLocal, style: AppTextStyles.bodySmall),
+          ),
+          SizedBox(
+            width: 70,
+            child: BoundTextField(
+              value: rule.localPort,
+              enabled: !isRunning,
+              keyboardType: TextInputType.number,
+              onChanged: (v) => _connection.updateRuleLocalPort(rule.id, v),
+            ),
+          ),
+          const SizedBox(width: 6),
+          const Text('→', style: AppTextStyles.bodySmall),
+          const SizedBox(width: 6),
+          Expanded(
+            child: BoundTextField(
+              value: rule.remoteHost,
+              enabled: !isRunning,
+              onChanged: (v) => _connection.updateRuleRemoteHost(rule.id, v),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 70,
+            child: BoundTextField(
+              value: rule.remotePort,
+              enabled: !isRunning,
+              keyboardType: TextInputType.number,
+              onChanged: (v) => _connection.updateRuleRemotePort(rule.id, v),
+            ),
+          ),
+          const SizedBox(width: 8),
+          CDKButtonIcon(
+            onPressed: (isRunning || !canDelete)
+                ? null
+                : () => _connection.removeForwardRule(rule.id),
+            icon: CupertinoIcons.delete,
+            semanticLabel: t.deleteRule,
+            size: 22,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _rowField(
     String label,
     String value,
@@ -580,6 +1066,7 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
     double? width,
     TextInputType? keyboardType,
     String? placeholder,
+    Widget? trailing,
   }) {
     final field = BoundTextField(
       value: value,
@@ -596,7 +1083,134 @@ class _ConnectionDetailViewState extends State<ConnectionDetailView> {
           Expanded(child: field)
         else
           SizedBox(width: width, child: field),
+        if (trailing != null) ...[const SizedBox(width: 6), trailing],
       ],
+    );
+  }
+}
+
+class PickerEntry {
+  const PickerEntry(this.label, this.onTap, {this.selected = false});
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+}
+
+/// A simple menu for popovers; `null` entries are separators.
+class PickerMenu extends StatelessWidget {
+  const PickerMenu({
+    super.key,
+    required this.entries,
+    this.title,
+    this.emptyText,
+  });
+
+  final List<PickerEntry?> entries;
+  final String? title;
+  final String? emptyText;
+
+  @override
+  Widget build(BuildContext context) {
+    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
+    final separator = CupertinoColors.separator.resolveFrom(context);
+    final hasItems = entries.any((e) => e != null);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: 220,
+        maxWidth: 360,
+        maxHeight: 360,
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (title != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 2, 12, 4),
+                child: Text(
+                  title!,
+                  style: AppTextStyles.label.copyWith(color: secondary),
+                ),
+              ),
+            if (!hasItems && emptyText != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                child: Text(
+                  emptyText!,
+                  style: AppTextStyles.bodySmall.copyWith(color: secondary),
+                ),
+              ),
+            for (final entry in entries)
+              if (entry == null)
+                Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  color: separator,
+                )
+              else
+                _PickerRow(entry: entry),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PickerRow extends StatefulWidget {
+  const _PickerRow({required this.entry});
+  final PickerEntry entry;
+
+  @override
+  State<_PickerRow> createState() => _PickerRowState();
+}
+
+class _PickerRowState extends State<_PickerRow> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = CDKThemeNotifier.of(context)!.changeNotifier;
+    final textColor = _hover
+        ? CupertinoColors.white
+        : CupertinoColors.label.resolveFrom(context);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.entry.onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          decoration: BoxDecoration(
+            color: _hover ? theme.accent : null,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                child: widget.entry.selected
+                    ? Icon(CupertinoIcons.checkmark, size: 12, color: textColor)
+                    : null,
+              ),
+              Flexible(
+                child: Text(
+                  widget.entry.label,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodySmall.copyWith(color: textColor),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

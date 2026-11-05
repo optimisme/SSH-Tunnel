@@ -12,7 +12,55 @@ enum TunnelPhase: Equatable {
     case retrying(seconds: Int)
     case active
     case stopping
-    case error(String)
+    case error(TunnelIssue)
+}
+
+/// Why a tunnel is in the error state. Kept typed so the UI text is localized in one place.
+enum TunnelIssue: Equatable {
+    case missingHost
+    case invalidSSHPort
+    case noRules
+    case invalidPorts(rule: String)
+    case missingRemoteHost(rule: String)
+    case duplicateLocalPort(Int)
+    case hostKeyChanged
+    case localPortInUse(String)
+    case authentication
+    case sshConfiguration
+    case sshExited(Int)
+    case connectionLost
+    case cannotRunSSH
+
+    var message: String {
+        switch self {
+        case .missingHost:
+            return String(localized: "Enter a host", comment: "Tunnel error")
+        case .invalidSSHPort:
+            return String(localized: "Invalid SSH port", comment: "Tunnel error")
+        case .noRules:
+            return String(localized: "No port forwarding rules", comment: "Tunnel error")
+        case .invalidPorts(let rule):
+            return String(localized: "Invalid ports in “\(rule)”", comment: "Tunnel error; the argument is a rule name")
+        case .missingRemoteHost(let rule):
+            return String(localized: "Missing remote host in “\(rule)”", comment: "Tunnel error; the argument is a rule name")
+        case .duplicateLocalPort(let port):
+            return String(localized: "Local port \(port) is used twice", comment: "Tunnel error")
+        case .hostKeyChanged:
+            return String(localized: "The host key changed (check ~/.ssh/known_hosts)", comment: "Tunnel error")
+        case .localPortInUse(let ports):
+            return String(localized: "Local port in use (\(ports))", comment: "Tunnel error; the argument is a list of ports")
+        case .authentication:
+            return String(localized: "Authentication failed (check the key or ssh-agent)", comment: "Tunnel error")
+        case .sshConfiguration:
+            return String(localized: "SSH configuration error", comment: "Tunnel error")
+        case .sshExited(let code):
+            return String(localized: "ssh exited (code \(code))", comment: "Tunnel error; the argument is an exit status")
+        case .connectionLost:
+            return String(localized: "Connection lost", comment: "Tunnel error")
+        case .cannotRunSSH:
+            return String(localized: "Cannot run ssh", comment: "Tunnel error")
+        }
+    }
 }
 
 @MainActor
@@ -53,9 +101,15 @@ final class SSHConnectionController: ObservableObject, Identifiable {
     private var resumeAfterWake = false
 
     private static let maxLogCharacters = 40_000
+    static let defaultKeyPath = "~/.ssh/id_rsa"
 
     init(defaultLocalPort: String) {
-        self.forwardRules = [PortForwardRule(name: "Regla 1", localPort: defaultLocalPort, remoteHost: "localhost", remotePort: "5900")]
+        self.keyPath = Self.defaultKeyPath
+        self.forwardRules = [PortForwardRule(name: Self.ruleName(1), localPort: defaultLocalPort, remoteHost: "localhost", remotePort: "5900")]
+    }
+
+    static func ruleName(_ index: Int) -> String {
+        String(localized: "Rule \(index)", comment: "Default name of a port forwarding rule")
     }
 
     init(snapshot: Snapshot) {
@@ -86,24 +140,26 @@ final class SSHConnectionController: ObservableObject, Identifiable {
         }
     }
 
+    var isActive: Bool { phase == .active }
+
     var statusLabel: String {
         switch phase {
-        case .active: return "Actiu"
-        case .connecting, .retrying: return "Connectant"
-        case .stopping: return "Aturant"
-        case .stopped: return "Aturat"
-        case .error: return "Error"
+        case .active: return String(localized: "Active", comment: "Tunnel status")
+        case .connecting, .retrying: return String(localized: "Connecting", comment: "Tunnel status")
+        case .stopping: return String(localized: "Stopping", comment: "Tunnel status")
+        case .stopped: return String(localized: "Stopped", comment: "Tunnel status")
+        case .error: return String(localized: "Error", comment: "Tunnel status")
         }
     }
 
     var statusDetail: String {
         switch phase {
         case .active: return "localhost:\(localPortsSummary)"
-        case .connecting: return "Connectant…"
-        case .retrying(let s): return "Reintentant en \(s)s…"
-        case .stopping: return "Aturant…"
+        case .connecting: return String(localized: "Connecting…", comment: "Tunnel status detail")
+        case .retrying(let s): return String(localized: "Retrying in \(s) s…", comment: "Tunnel status detail; s = seconds")
+        case .stopping: return String(localized: "Stopping…", comment: "Tunnel status detail")
         case .stopped: return ""
-        case .error(let msg): return msg
+        case .error(let issue): return issue.message
         }
     }
 
@@ -130,6 +186,12 @@ final class SSHConnectionController: ObservableObject, Identifiable {
 
     func stop() {
         Task { await performStop() }
+    }
+
+    /// Stops the tunnel and returns once ssh has been told to exit (used on quit).
+    func stopAndWait() async {
+        guard isRunning else { return }
+        await performStop()
     }
 
     /// Re-inspects the system (e.g. on launch, or to adopt a tunnel started outside the app).
@@ -172,6 +234,15 @@ final class SSHConnectionController: ObservableObject, Identifiable {
         forwardRules.removeAll { $0.id == id }
     }
 
+    /// Moves the rule at `source` so it ends up at index `destination` (clamped).
+    func moveForwardRule(from source: Int, to destination: Int) {
+        guard !isRunning, forwardRules.indices.contains(source) else { return }
+        let target = min(max(destination, 0), forwardRules.count - 1)
+        guard target != source else { return }
+        let rule = forwardRules.remove(at: source)
+        forwardRules.insert(rule, at: target)
+    }
+
     // MARK: - Sleep / wake
 
     func systemWillSleep() {
@@ -188,7 +259,7 @@ final class SSHConnectionController: ObservableObject, Identifiable {
         if autoReconnect {
             // The TCP connection almost certainly died during sleep, but the ssh
             // master may not notice for ~30s. Restart it right away instead.
-            appendLog("[info] Wake from sleep: restarting tunnel")
+            appendLog("[info] " + String(localized: "Woke from sleep: restarting the tunnel", comment: "Log line"))
             Task {
                 await self.performStop()
                 try? await Task.sleep(nanoseconds: 2_000_000_000) // let the network come back
@@ -207,7 +278,7 @@ final class SSHConnectionController: ObservableObject, Identifiable {
     private func connect() {
         guard process == nil else { return }
         if let problem = validationError() {
-            appendLog("[error] \(problem)")
+            appendLog("[error] \(problem.message)")
             phase = .error(problem)
             return
         }
@@ -221,7 +292,9 @@ final class SSHConnectionController: ObservableObject, Identifiable {
             if state == .stopped {
                 self.launchSSH(gen: gen)
             } else {
-                if state == .portUsedByOther { self.appendLog("[error] Local port in use by another process.") }
+                if state == .portUsedByOther {
+                    self.appendLog("[error] " + String(localized: "A local port is in use by another process.", comment: "Log line"))
+                }
                 self.apply(state)
             }
         }
@@ -285,8 +358,8 @@ final class SSHConnectionController: ObservableObject, Identifiable {
             process = p
             startTimer()
         } catch {
-            appendLog("[error] Cannot execute ssh: \(error.localizedDescription)")
-            phase = .error("no puc executar ssh")
+            appendLog("[error] " + String(localized: "Cannot run ssh: \(error.localizedDescription)", comment: "Log line"))
+            phase = .error(.cannotRunSSH)
         }
     }
 
@@ -307,18 +380,18 @@ final class SSHConnectionController: ObservableObject, Identifiable {
         let kind = Self.classifyFailure(attemptLog)
         switch kind {
         case .hostKeyChanged:
-            phase = .error("la clau del host ha canviat (revisa ~/.ssh/known_hosts)")
+            phase = .error(.hostKeyChanged)
         case .addressInUse:
-            phase = .error("port local ocupat (\(localPortsSummary))")
+            phase = .error(.localPortInUse(localPortsSummary))
         case .authOrKey:
-            phase = .error("autenticació/clau")
+            phase = .error(.authentication)
         case .config:
-            phase = .error("configuració ssh")
+            phase = .error(.sshConfiguration)
         case .transient, .other:
             if autoReconnect {
                 scheduleReconnect()
             } else {
-                phase = .error("ssh ha sortit (codi \(exitCode))")
+                phase = .error(.sshExited(Int(exitCode)))
             }
         }
     }
@@ -341,7 +414,9 @@ final class SSHConnectionController: ObservableObject, Identifiable {
             var log = SMB.unmount(targets: targets)
             let exited = spec.map { TunnelProbe.controlExit($0) } ?? false
             if !exited, let pid {
-                if kill(pid, SIGTERM) != 0 { log.append("[error] Could not stop ssh process \(pid)") }
+                if kill(pid, SIGTERM) != 0 {
+                    log.append("[error] " + String(localized: "Could not stop ssh process \(Int(pid))", comment: "Log line"))
+                }
             }
             return log
         }
@@ -381,16 +456,16 @@ final class SSHConnectionController: ObservableObject, Identifiable {
         case .portUsedByOther:
             externalMatchingPid = nil
             stopTimer()
-            phase = .error("port local ocupat (\(localPortsSummary))")
+            phase = .error(.localPortInUse(localPortsSummary))
         case .stopped:
             externalMatchingPid = nil
             stopTimer()
             if phase == .active {
-                appendLog("[info] Connection lost")
+                appendLog("[info] " + TunnelIssue.connectionLost.message)
                 if autoReconnect {
                     scheduleReconnect()
                 } else {
-                    phase = .error("connexió perduda")
+                    phase = .error(.connectionLost)
                 }
             } else {
                 phase = .stopped
@@ -452,13 +527,13 @@ final class SSHConnectionController: ObservableObject, Identifiable {
             attemptedSMBMountPorts.insert(local)
 
             guard let url = SMB.homeURL(user: user, localPort: local) else {
-                appendLog("[error] Could not build SMB URL for user/home share on local port \(local)")
+                appendLog("[error] " + String(localized: "Could not build the SMB address for local port \(local)", comment: "Log line"))
                 continue
             }
             if NSWorkspace.shared.open(url) {
-                appendLog("[info] Opening Finder SMB mount: \(url.absoluteString)")
+                appendLog("[info] " + String(localized: "Opening the SMB share in Finder: \(url.absoluteString)", comment: "Log line"))
             } else {
-                appendLog("[error] Finder could not open SMB URL: \(url.absoluteString)")
+                appendLog("[error] " + String(localized: "Finder could not open \(url.absoluteString)", comment: "Log line"))
             }
         }
     }
@@ -472,7 +547,8 @@ final class SSHConnectionController: ObservableObject, Identifiable {
 
     // MARK: - Helpers
 
-    private var sshTarget: String { "\(user.trimmed)@\(host.trimmed)" }
+    /// `user@host`, or just `host` so ssh takes the user from ~/.ssh/config (or the login name).
+    private var sshTarget: String { user.trimmed.isEmpty ? host.trimmed : "\(user.trimmed)@\(host.trimmed)" }
 
     private var localPortsSummary: String {
         forwardRules.map { $0.localPort }.joined(separator: ",")
@@ -482,7 +558,7 @@ final class SSHConnectionController: ObservableObject, Identifiable {
         forwardRules.map { "\($0.localPort.trimmed):\($0.remoteHost.trimmed):\($0.remotePort.trimmed)" }
     }
 
-    private var controlSocketPath: String {
+    var controlSocketPath: String {
         // NOTE: keep this format stable so tunnels started by previous versions are still recognised.
         let forwardRulesKey = forwardRules
             .map { "L\($0.localPort)->\($0.remoteHost):\($0.remotePort)" }
@@ -493,7 +569,7 @@ final class SSHConnectionController: ObservableObject, Identifiable {
         return "\(home)/.ssh/tunnelctl_\(Self.stableShortHash(base)).sock"
     }
 
-    private static func stableShortHash(_ s: String) -> String {
+    static func stableShortHash(_ s: String) -> String {
         var hash: UInt64 = 14695981039346656037
         for b in s.utf8 {
             hash ^= UInt64(b)
@@ -503,10 +579,9 @@ final class SSHConnectionController: ObservableObject, Identifiable {
     }
 
     private func makeSpec() -> TunnelSpec? {
-        guard !host.trimmed.isEmpty, !user.trimmed.isEmpty else { return nil }
+        guard !host.trimmed.isEmpty else { return nil }
         return TunnelSpec(
-            user: user.trimmed,
-            host: host.trimmed,
+            target: sshTarget,
             sshPort: sshPort.trimmed,
             localPorts: forwardRules.compactMap { UInt16($0.localPort.trimmed) },
             forwards: forwardSpecs,
@@ -514,17 +589,16 @@ final class SSHConnectionController: ObservableObject, Identifiable {
         )
     }
 
-    private func validationError() -> String? {
-        if host.trimmed.isEmpty { return "cal indicar el host" }
-        if user.trimmed.isEmpty { return "cal indicar l'usuari" }
-        if !sshPort.trimmed.isEmpty, UInt16(sshPort.trimmed) == nil { return "port SSH invàlid" }
-        if forwardRules.isEmpty { return "cap regla de port definida" }
+    func validationError() -> TunnelIssue? {
+        if host.trimmed.isEmpty { return .missingHost }
+        if !sshPort.trimmed.isEmpty, (UInt16(sshPort.trimmed) ?? 0) == 0 { return .invalidSSHPort }
+        if forwardRules.isEmpty { return .noRules }
         var seen = Set<UInt16>()
         for r in forwardRules {
             guard let lp = UInt16(r.localPort.trimmed), lp > 0,
-                  let rp = UInt16(r.remotePort.trimmed), rp > 0 else { return "ports invàlids a \(r.name)" }
-            if r.remoteHost.trimmed.isEmpty { return "falta el host remot a \(r.name)" }
-            if !seen.insert(lp).inserted { return "port local \(lp) repetit" }
+                  let rp = UInt16(r.remotePort.trimmed), rp > 0 else { return .invalidPorts(rule: r.name) }
+            if r.remoteHost.trimmed.isEmpty { return .missingRemoteHost(rule: r.name) }
+            if !seen.insert(lp).inserted { return .duplicateLocalPort(Int(lp)) }
         }
         return nil
     }
@@ -550,13 +624,13 @@ final class SSHConnectionController: ObservableObject, Identifiable {
     private func suggestedRuleName() -> String {
         let used = Set(forwardRules.map { $0.name.trimmed })
         var idx = 1
-        while used.contains("Regla \(idx)") { idx += 1 }
-        return "Regla \(idx)"
+        while used.contains(Self.ruleName(idx)) { idx += 1 }
+        return Self.ruleName(idx)
     }
 
     // MARK: - Failure classification
 
-    private enum FailureKind {
+    enum FailureKind {
         case hostKeyChanged
         case addressInUse
         case authOrKey
@@ -565,7 +639,7 @@ final class SSHConnectionController: ObservableObject, Identifiable {
         case other
     }
 
-    private static func classifyFailure(_ text: String) -> FailureKind {
+    static func classifyFailure(_ text: String) -> FailureKind {
         let s = text.lowercased()
 
         if s.contains("host key verification failed") ||
